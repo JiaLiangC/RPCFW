@@ -1,4 +1,4 @@
-package RPCFW.RPCCommon;
+package RPCFW.Transport.common;
 
 import java.io.Serializable;
 
