@@ -9,6 +9,6 @@ public class EatServiceImpl implements EatService {
     @Override
     public String eat(Menu menu) {
         logger.info("get menu: food name{}, desc{}",menu.foodName,menu.foodDesc);
-        return "eat finished,thamks";
+        return "eat finished,thanks";
     }
 }

@@ -9,4 +9,7 @@ public class Menu {
         this.foodName = foodName;
         this.foodDesc = foodDesc;
     }
+
+    public Menu() {
+    }
 }

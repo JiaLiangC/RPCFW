@@ -11,7 +11,6 @@ import java.lang.reflect.Proxy;
 public class ClientProxy implements InvocationHandler {
 
     private RpcClient client;
-    private int port;
 
     public ClientProxy(RpcClient rpcClient) {
         this.client = rpcClient;

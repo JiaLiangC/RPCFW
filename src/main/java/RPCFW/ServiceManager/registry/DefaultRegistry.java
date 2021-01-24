@@ -1,5 +1,7 @@
 package RPCFW.ServiceManager.registry;
 
+import RPCFW.RPCDemo.Netty.EatService;
+import RPCFW.RPCDemo.Netty.EatServiceImpl;
 import RPCFW.ServiceManager.NetNode;
 import RPCFW.ServiceManager.ResourceInfo;
 import RPCFW.ServiceManager.ResourceNodePool;
@@ -26,6 +28,7 @@ public class DefaultRegistry {
     * service 注册的对象
     *  */
     synchronized public <T> void register(T serviceimpl) {
+
        String serviceName = serviceimpl.getClass().getCanonicalName();
         if (services.contains(serviceName)) {
             return;
@@ -41,7 +44,7 @@ public class DefaultRegistry {
 
     public Object getService(String serviceName) {
         Object service =  serviceMap.get(serviceName);
-        return null;
+        return service;
     }
 
     public void cancel(String serviceName) {
@@ -49,5 +52,12 @@ public class DefaultRegistry {
 
     public List<NetNode> getAddressList(ResourceInfo resourceInfo) {
         return null;
+    }
+
+    public static void main(String[] args) {
+        DefaultRegistry defaultRegistry = new DefaultRegistry();
+        defaultRegistry.register(new EatServiceImpl());
+        Object x = defaultRegistry.getService(EatService.class.getCanonicalName());
+        System.out.println();
     }
 }

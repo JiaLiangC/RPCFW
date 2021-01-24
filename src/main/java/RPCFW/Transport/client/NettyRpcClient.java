@@ -13,6 +13,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +37,7 @@ public class NettyRpcClient implements RpcClient{
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
                         socketChannel.pipeline()
+                                .addLast(new LoggingHandler(LogLevel.DEBUG))
                                 .addLast(new NettyProtocolEncoder())
                                 .addLast(new NettyProtocolDecoder(Constants.MAX_FRAME_LENGTH))
                                 .addLast(new RpcClientHandler());
@@ -46,8 +49,9 @@ public class NettyRpcClient implements RpcClient{
     @Override
     public Object sendRpcRequest(RPCRequest rpcRequest){
         try {
-            ChannelFuture channelFuture = bootstrap.connect(host,port).sync();
-            Channel channel =channelFuture.channel();
+            ChannelFuture channelFuture = bootstrap.connect(host, port).sync();
+            logger.info("rpc client connected to server success");
+            Channel channel = channelFuture.channel();
             if(channel!=null){
                 channel.writeAndFlush(rpcRequest).addListener(future->{
                     if (future.isSuccess()){
@@ -60,6 +64,7 @@ public class NettyRpcClient implements RpcClient{
                 channel.closeFuture().sync();
                 AttributeKey<RpcResponse> attributeKey = AttributeKey.valueOf("rpcResponse");
                 RpcResponse rpcResponse =  channel.attr(attributeKey).get();
+                logger.info("sendRpcRequest finished received msg: {}, {}",rpcResponse.getCode(),rpcResponse.getData());
                 return rpcResponse.getData();
             }
 

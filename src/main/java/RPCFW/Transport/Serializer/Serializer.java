@@ -13,6 +13,8 @@ public interface Serializer {
 
      <T> T decoder(byte[] data,Class<T> clazz);
 
+     default <T> T decoder(byte[] data){return null;};
+
      default <T> T  decoder(InputStream in, Class<T> clazz){
           return null;
      };

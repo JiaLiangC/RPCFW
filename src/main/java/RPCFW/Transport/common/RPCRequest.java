@@ -9,7 +9,8 @@ public class RPCRequest implements Serializable {
     private Class<?>[] parameterTypes;
     private static final long serialVersionUID = 1L;
 
-
+    public RPCRequest() {
+    }
 
     private RPCRequest(String methodName, String interfaceName, Object[] parameters, Class<?>[] parameterTypes) {
         this.methodName = methodName;

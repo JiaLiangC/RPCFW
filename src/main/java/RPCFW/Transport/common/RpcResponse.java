@@ -2,24 +2,12 @@ package RPCFW.Transport.common;
 
 public class RpcResponse<T> {
 
-
     private Integer code;
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     private String message;
-
-    public void setData(T data) {
-        this.data = data;
-    }
-
     private T data;
+
+    public RpcResponse() {
+    }
 
     public static <T>  RpcResponse success(T data){
         RpcResponse rpcResponse = new RpcResponse();
@@ -38,6 +26,17 @@ public class RpcResponse<T> {
         return rpcResponse;
     }
 
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
 
     public Integer getCode() {
         return code;

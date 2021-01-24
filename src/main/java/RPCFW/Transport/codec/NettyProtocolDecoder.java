@@ -6,8 +6,12 @@ import RPCFW.Transport.common.RPCRequest;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NettyProtocolDecoder extends LengthFieldBasedFrameDecoder {
+    private static final Logger logger = LoggerFactory.getLogger(NettyProtocolDecoder.class);
+
     int maxFrameLength;
     static  final int lengthFieldOffset=2;
     static  final int lengthFieldLength=4;
@@ -28,6 +32,8 @@ public class NettyProtocolDecoder extends LengthFieldBasedFrameDecoder {
     //TODO 魔术位验证
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+
+        logger.info("decode starting ");
          ByteBuf decode =  (ByteBuf) super.decode(ctx, in);
          if(decode!=null){
              Short magicNumber = decode.readShort();
@@ -47,10 +53,11 @@ public class NettyProtocolDecoder extends LengthFieldBasedFrameDecoder {
                  // read body
                  byte[] data = new byte[bodyLength];
                  decode.readBytes(data);
-                 RPCRequest rpcRequest = serializer.decoder(data, RPCRequest.class);
-                 return rpcRequest;
+                 Object o = serializer.decoder(data);
+                 return o;
              }
-
+         }else{
+             logger.error("ByteBuf decode is null");
          }
         return null;
     }
