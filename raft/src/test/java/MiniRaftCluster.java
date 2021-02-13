@@ -58,6 +58,11 @@ public abstract class MiniRaftCluster {
         return this;
     }
 
+    /**
+     *
+     * @param peers
+     * @return
+     */
     Collection<RaftServerProxy> putNewServers(Collection<RaftPeer> peers){
        return peers.stream().map(peer->{
             StateMachine stateMachine = getStateMachineForTest();

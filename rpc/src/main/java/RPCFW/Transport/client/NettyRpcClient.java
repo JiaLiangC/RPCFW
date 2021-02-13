@@ -19,6 +19,8 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+
 public class NettyRpcClient implements RpcClient{
     private static final Logger logger = LoggerFactory.getLogger(NettyRpcClient.class);
     private String host;
@@ -26,9 +28,10 @@ public class NettyRpcClient implements RpcClient{
     private Bootstrap bootstrap;
     NioEventLoopGroup group = new NioEventLoopGroup();
 
-    public NettyRpcClient(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public NettyRpcClient() {
+    //public NettyRpcClient(String host, int port) {
+        //this.host = host;
+        //this.port = port;
         this.bootstrap = new Bootstrap();
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
@@ -44,6 +47,20 @@ public class NettyRpcClient implements RpcClient{
                     }
                 });
     }
+
+    @Override
+    public void connect(InetSocketAddress address){
+
+        //TODO netty 异步操作返回的future
+        ChannelFuture channelFuture = bootstrap.connect(address);
+    }
+
+    @Override
+    public void connect(String host, int port){
+        //TODO netty 异步操作返回的future
+        ChannelFuture channelFuture = bootstrap.connect(host,port);
+    }
+
 
 
     @Override

@@ -76,22 +76,10 @@ public class ServerState {
     }
 
 
-
-    public void turnToCandidate(){
-        lock.lock();
-        currentTerm+=1;
-        role= RaftRole.Candidate;
-        votedFor = selfId;
-        leaderId=null;
-        lock.unlock();
+    public void becomLeader(){
+        setLeader(selfId,"becomLeader");
     }
 
-    public void turnToFollower(){
-        lock.lock();
-        role = RaftRole.Follower;
-        votedFor = null;
-        lock.unlock();
-    }
 
     public void setLeader(RaftPeerId newLeaderId,String operation){
         if(!Objects.equals(newLeaderId,leaderId)){

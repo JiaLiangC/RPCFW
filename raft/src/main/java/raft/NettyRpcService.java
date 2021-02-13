@@ -47,12 +47,13 @@ public class NettyRpcService implements RaftServerRpc {
         registry.register(new RaftServiceImpl());
 
         this.rpcServer = new NettyRpcServer(8080);
-        rpcServer.start();
+
     }
+
 
     @Override
     public void start() {
-
+        rpcServer.start();
     }
 
     @Override

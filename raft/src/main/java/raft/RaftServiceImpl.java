@@ -1,5 +1,7 @@
 package raft;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import raft.requestBean.AppendEntriesReply;
 import raft.requestBean.RequestVoteReply;
 
@@ -11,6 +13,10 @@ import raft.requestBean.RequestVoteReply;
  * @date 2021/02/11
  */
 public class RaftServiceImpl implements RaftService {
+    public static final Logger LOG = LoggerFactory.getLogger(RaftServiceImpl.class);
+
+    private RaftRole role;
+    private ServerState serverState;
 
 
     @Override
@@ -20,6 +26,12 @@ public class RaftServiceImpl implements RaftService {
 
     @Override
     public RequestVoteReply RequestVote() {
+
         return null;
     }
+
+
+
+
 }
+

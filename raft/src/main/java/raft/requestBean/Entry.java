@@ -1,5 +1,5 @@
 package raft.requestBean;
 
-public class Entry<T> {
-
+public class Entry {
+    SMLogEntry smLogEntry;
 }

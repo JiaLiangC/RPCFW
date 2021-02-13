@@ -25,4 +25,7 @@ public class RaftPeer {
         this(raftPeerId,address==null ? null: NetUtils.address2String(address));
     }
 
+    public String getAddress() {
+        return address;
+    }
 }

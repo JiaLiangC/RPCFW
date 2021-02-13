@@ -43,6 +43,7 @@ public class RaftServerProxy implements RaftServer {
         return stateMachine;
     }
 
+
     @Override
     public void start() {
         raftServerRpc.start();
