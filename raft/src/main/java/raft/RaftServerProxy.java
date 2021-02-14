@@ -1,6 +1,10 @@
 package raft;
 
+import RPCFW.ServiceManager.registry.DefaultRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import raft.common.RaftGroup;
+import raft.common.RaftPeer;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
 import raft.requestBean.AppendEntriesReply;
@@ -24,6 +28,7 @@ public class RaftServerProxy implements RaftServer {
     private final RaftServerRpc raftServerRpc;
     private final RaftServerImpl raftServerImpl;
 
+    private static final Logger LOG = LoggerFactory.getLogger(RaftServerProxy.class);
 
     public RaftServerProxy(RaftPeerId id, StateMachine stateMachine, RaftGroup group, RaftProperties properties){
         this.stateMachine = stateMachine;
@@ -46,7 +51,20 @@ public class RaftServerProxy implements RaftServer {
 
     @Override
     public void start() {
-        raftServerRpc.start();
+        LOG.info("raft: {} server started",raftServerImpl.serverState.getSelfId().getString());
         raftServerImpl.start();
+        raftServerRpc.start();
     }
+
+    @Override
+    public RaftPeer getPeer(RaftPeerId id) {
+        return raftServerImpl.getPeer(id);
+    }
+
+    @Override
+    public RaftPeerId getId() {
+        return id;
+    }
+
+
 }

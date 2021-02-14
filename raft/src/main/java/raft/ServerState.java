@@ -8,6 +8,7 @@ import raft.common.RaftPeer;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
@@ -22,41 +23,23 @@ import static raft.RaftServerImpl.LOG;
  */
 public class ServerState {
     private final ReentrantLock lock = new ReentrantLock();
-    private Set<RaftPeer> peers;
+    //private Set<RaftPeer> peers;
     private int currentTerm;
 
     private  RaftPeerId votedFor;
-
-    public RaftPeerId getVotedFor() {
-        return votedFor;
-    }
-
-    public void setVotedFor(RaftPeerId votedFor) {
-        this.votedFor = votedFor;
-    }
-
-    public RaftPeerId getLeaderId() {
-        return leaderId;
-    }
-
-    public void setLeaderId(RaftPeerId leaderId) {
-        this.leaderId = leaderId;
-    }
-
-    public RaftPeerId getSelfId() {
-        return selfId;
-    }
-
-    public void setSelfId(RaftPeerId selfId) {
-        this.selfId = selfId;
-    }
 
     private RaftPeerId leaderId;
     private RaftPeerId selfId;
     private RaftRole role;
     private RaftServerImpl server;
+    private RaftGroup group;
 
 
+    public int initEleciton(){
+        votedFor=selfId;
+        setLeader(null,"initEleciton");
+        return  ++currentTerm;
+    }
 
     public  ServerState(RaftPeerId peerId, RaftGroup group, RaftProperties properties,RaftServerImpl server,StateMachine stateMachine){
         this.selfId=peerId;
@@ -64,13 +47,12 @@ public class ServerState {
         this.leaderId=null;
         this.currentTerm=0;
         this.votedFor=null;
-
+        this.group = group;
     }
-
 
     public int getPeersCount(){
         lock.lock();
-        int size = peers.size();
+        int size = group.getRaftPeers().size();
         lock.unlock();
         return size;
     }
@@ -90,21 +72,15 @@ public class ServerState {
     }
 
 
-    public Set<RaftPeer> getPeers() {
-        return peers;
+    public Collection<RaftPeer> getPeers() {
+        return group.getRaftPeers();
     }
 
-    public void setPeers(Set<RaftPeer> peers) {
-        this.peers = peers;
-    }
 
     public RaftRole getRole() {
         return role;
     }
 
-    public void setRole(RaftRole role) {
-        this.role = role;
-    }
 
     public int getCurrentTerm() {
         return currentTerm;
@@ -112,5 +88,30 @@ public class ServerState {
 
     public void setCurrentTerm(int currentTerm) {
         this.currentTerm = currentTerm;
+    }
+
+    public RaftPeerId getVotedFor() {
+        return votedFor;
+    }
+
+    public void setVotedFor(RaftPeerId votedFor) {
+        this.votedFor = votedFor;
+    }
+
+
+    public void setLeaderId(RaftPeerId leaderId) {
+        this.leaderId = leaderId;
+    }
+
+    public RaftPeerId getLeaderId() {
+        return leaderId;
+    }
+
+    public RaftPeerId getSelfId() {
+        return selfId;
+    }
+
+    public void setSelfId(RaftPeerId selfId) {
+        this.selfId = selfId;
     }
 }

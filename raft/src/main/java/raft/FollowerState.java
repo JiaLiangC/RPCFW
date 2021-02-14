@@ -1,5 +1,7 @@
 package raft;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import raft.common.Daemon;
 import raft.common.RaftPeer;
 import raft.requestBean.AppendEntriesReply;
@@ -16,16 +18,23 @@ import java.util.concurrent.TimeUnit;
  * @date 2021/02/13
  */
 public class FollowerState extends Daemon {
+    public static final Logger LOG = LoggerFactory.getLogger(RaftServerImpl.class);
 
     private static final long NANOSECONDS_PER_MILLISECOND = 1000000;
     private RaftServerImpl raftServerImpl;
     private Long lastHeartBeatRpcTime = System.nanoTime();
     private Long elapsedTime;
+    private volatile boolean running;
 
 
     FollowerState(RaftServerImpl raftServerImpl){
         this.raftServerImpl = raftServerImpl;
-        elapsedTime=0L;
+        this.elapsedTime=0L;
+        this.running=true;
+    }
+
+    public void stopRunning(){
+        this.running=false;
     }
 
     public  void updateLastHeartBeatRpcTime(){
@@ -34,15 +43,18 @@ public class FollowerState extends Daemon {
 
     @Override
     public void run() {
-        while (raftServerImpl.isFollower()){
+        LOG.info("startHeartBeatMonitor");
+        while (this.running && raftServerImpl.isFollower()){
             try {
                 int electionTimeoutDur =  raftServerImpl.getRandomTimeOutMs();
+                LOG.info("electionTimeoutDur is {}",electionTimeoutDur);
                 Thread.sleep(electionTimeoutDur);
                 if(!raftServerImpl.isFollower()){
                     break;
                 }
                 if(getElapsedTime()>electionTimeoutDur){
                     raftServerImpl.changeToCandidate();
+                    return;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -51,7 +63,7 @@ public class FollowerState extends Daemon {
     }
 
     long getElapsedTime(){
-        long ms =  (System.nanoTime()-lastHeartBeatRpcTime)/NANOSECONDS_PER_MILLISECOND;
-        return ms;
+        elapsedTime =  (System.nanoTime()-lastHeartBeatRpcTime)/NANOSECONDS_PER_MILLISECOND;
+        return elapsedTime;
     }
 }

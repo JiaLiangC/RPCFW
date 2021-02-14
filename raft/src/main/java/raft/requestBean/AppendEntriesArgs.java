@@ -22,6 +22,30 @@ public class AppendEntriesArgs {
         return new Builder();
     }
 
+    public int getTerm() {
+        return Term;
+    }
+
+    public void setTerm(int term) {
+        Term = term;
+    }
+
+    public String getLeaderId() {
+        return LeaderId;
+    }
+
+    public void setLeaderId(String leaderId) {
+        LeaderId = leaderId;
+    }
+
+    public List<Entry> getEntries() {
+        return Entries;
+    }
+
+    public void setEntries(List<Entry> entries) {
+        Entries = entries;
+    }
+
     public static class Builder{
         private int Term;
         private String LeaderId;

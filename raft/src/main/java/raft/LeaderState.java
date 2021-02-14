@@ -16,11 +16,13 @@ public class LeaderState extends Daemon {
     private  RaftServerImpl server;
     private ServerState serverState;
     private ExecutorService executorService;
+    private volatile boolean running;
 
     public LeaderState(RaftServerImpl server){
         this.server=server;
         this.serverState = server.getServerState();
         this.executorService = Executors.newFixedThreadPool(serverState.getPeersCount());
+        this.running=true;
     }
 
     @Override
@@ -31,18 +33,14 @@ public class LeaderState extends Daemon {
 
     public void heartbeatDaemon(){
         ScheduledExecutorService service = Executors.newScheduledThreadPool(10);
-        for(;;){
-            if (serverState.getRole()!=RaftRole.Leader){
-                return;
-            }
+        while (server.isLeader() && running){
             service.scheduleAtFixedRate(()->{
-                int peersLen = serverState.getPeersCount();
                 serverState.getPeers().forEach((RaftPeer peer)->{
                             if(peer.getId()!=serverState.getSelfId()){
                                 executorService.submit(()->{
                                     //TODO construct heartbeat args
                                     AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs();
-                                    AppendEntriesReply reply = server.sendAppendEntries(peer,args);
+                                    AppendEntriesReply reply = server.sendAppendEntries(peer.getId(),args);
                                     if(!reply.isSuccess()){
                                         server.changeToFollower();
                                     }
@@ -52,6 +50,10 @@ public class LeaderState extends Daemon {
                 );
             }, 0,500, TimeUnit.MILLISECONDS);
         }
+    }
+
+    public void stopRunning(){
+        this.running=false;
     }
 
 

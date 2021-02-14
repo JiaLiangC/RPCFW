@@ -1,4 +1,4 @@
-package raft.common.utils;
+package RPCFW.utils;
 
 import java.io.IOException;
 import java.net.*;
@@ -35,12 +35,6 @@ public class NetUtils {
         Objects.requireNonNull(target,"target == null");
         boolean hasSchema = target.contains("://");
         final URI uri;
-
-        //socket 默认创建的地址是/localhost:10.9.46.111:9999
-        if(!hasSchema && target.charAt(0)=='/'){
-            target=target.substring(1);
-        }
-
         try {
             uri = new URI(hasSchema ?  target: "dummy://"+target);
         } catch (URISyntaxException e) {

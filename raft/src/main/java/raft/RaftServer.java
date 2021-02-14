@@ -1,5 +1,8 @@
 package raft;
 
+import raft.common.RaftPeer;
+import raft.common.id.RaftPeerId;
+
 /**
  * raft 服务器
  *
@@ -12,6 +15,10 @@ public interface RaftServer {
      *启动服务器
      */
     void start();
+
+    RaftPeer getPeer(RaftPeerId id);
+
+    RaftPeerId getId();
 
 
 }

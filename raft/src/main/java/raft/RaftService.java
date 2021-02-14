@@ -15,4 +15,6 @@ import raft.requestBean.RequestVoteReply;
 public interface RaftService {
      AppendEntriesReply AppendEntries(AppendEntriesArgs args);
      RequestVoteReply RequestVote(RequestVoteArgs args);
+     String rpcTest();
+
 }

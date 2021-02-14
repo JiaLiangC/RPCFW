@@ -1,6 +1,5 @@
-package RPCFW.Transport;
+package RPCFW.Transport.client;
 
-import RPCFW.Transport.client.RpcClient;
 import RPCFW.Transport.common.RPCRequest;
 
 import java.lang.reflect.InvocationHandler;

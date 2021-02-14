@@ -16,9 +16,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public abstract class MiniRaftCluster {
+public  class MiniRaftCluster {
     public static final Logger LOG = LoggerFactory.getLogger(MiniRaftCluster.class);
 
     protected RaftGroup group;
@@ -81,9 +84,15 @@ public abstract class MiniRaftCluster {
         return proxy;
     }
 
-    void start(){
+    void start() throws InterruptedException {
+        ExecutorService service = Executors.newFixedThreadPool(20);
         initServers();
-        servers.values().forEach(RaftServer::start);
+        servers.values().forEach(server->{
+            service.submit(()->{
+                server.start();
+            });
+        });
+        service.awaitTermination(1, TimeUnit.HOURS);
     }
 
 

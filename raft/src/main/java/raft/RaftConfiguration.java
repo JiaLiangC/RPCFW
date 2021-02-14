@@ -9,9 +9,11 @@ package raft;
  */
 public class RaftConfiguration {
 
-    private int port;
+    private int port = 8081;
     private int heartbeatTimerInterval;
     private  int electionTimeOutDuration;
+
+
 
     public int getPort() {
         return port;

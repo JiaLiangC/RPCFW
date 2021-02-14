@@ -2,7 +2,8 @@ package raft;
 
 
 import RPCFW.ServiceManager.registry.DefaultRegistry;
-import RPCFW.Transport.ClientProxy;
+import RPCFW.Transport.client.ClientProxy;
+import RPCFW.Transport.client.NettyClientProxy;
 import RPCFW.Transport.client.NettyRpcClient;
 import RPCFW.Transport.client.RpcClient;
 import RPCFW.Transport.server.NettyRpcServer;
@@ -15,15 +16,13 @@ import raft.common.RaftProperties;
 import raft.common.id.RaftGroupId;
 import raft.common.id.RaftPeerId;
 import raft.common.utils.NetUtils;
-import raft.handler.AppendEntries;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;
 import raft.requestBean.RequestVoteArgs;
 import raft.requestBean.RequestVoteReply;
 
-import java.util.Random;
+import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -48,6 +47,10 @@ public class RaftServerImpl {
     private RaftRole role;
 
     private volatile LeaderElection electionDaemon;
+    private  volatile FollowerState heartBeatMonitor;
+    private  volatile LeaderState leaderState;
+
+    private final Map<RaftPeerId,RaftPeer> peerMap = new ConcurrentHashMap<>();
 
 
     public ServerState getServerState() {
@@ -58,43 +61,42 @@ public class RaftServerImpl {
         this.groupId=group.getRaftGroupId();
         this.proxy=proxy;
         this.serverState=new ServerState(peerId,group,properties,this,proxy.getStateMachine());
+        setPeerMap(group);
     }
 
-    private NettyRpcServer nettyRpcServer;
-    private int port;
+    void setPeerMap(RaftGroup raftGroup){
+        raftGroup.getRaftPeers().forEach(peer->{
+            peerMap.computeIfAbsent(peer.getId(),k->peer);
+        });
+    }
+
+    public RaftPeer getPeer(RaftPeerId id){
+        return peerMap.get(id);
+    }
 
 
     private void startAsFollower(){
-        role=RaftRole.Follower;
         setRole(RaftRole.Follower,"startAsFollower");
-
+        startHeartBeatMonitor();
     }
 
     public void setRole(RaftRole newRole,String op) {
         if(newRole!=role){
-            LOG.info("change role from{} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm());
+            LOG.info("change role from{} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm(),op);
             this.role = newRole;
         }
     }
 
-//    public void turnToCandidate(){
-//        lock.lock();
-//        currentTerm+=1;
-//        role= RaftRole.Candidate;
-//        votedFor = selfId;
-//        leaderId=null;
-//        lock.unlock();
-//    }
-
-    void changeToCandidate(){
-        Preconditions.assertTrue(isFollower(),"serverState is not follower,can't changeToCandidate");
-        setRole(RaftRole.Candidate,"changeToCandidate");
-        startLeaderElection();
-    }
 
     public void startLeaderElection(){
         electionDaemon = new LeaderElection(this);
         electionDaemon.start();
+    }
+
+
+    public void startHeartBeatMonitor(){
+        heartBeatMonitor = new FollowerState(this);
+        heartBeatMonitor.start();
     }
 
     public void  shutdownElectiondaemon(){
@@ -102,15 +104,39 @@ public class RaftServerImpl {
         if(leaderElection!=null){
             leaderElection.stopRunning();
         }
+        electionDaemon=null;
+    }
+
+
+    public void shutDonwHeartBeatMonitor(){
+        if(heartBeatMonitor!=null){
+            heartBeatMonitor.stopRunning();
+        }
+        heartBeatMonitor=null;
+    }
+
+    public void shutDownLeaderState(){
+        if(leaderState!=null){
+            leaderState.stopRunning();
+        }
+        leaderState=null;
+    }
+
+    void changeToCandidate(){
+        Preconditions.assertTrue(isFollower(),"serverState is "+role.toString()+"  not follower,can't changeToCandidate");
+        shutDonwHeartBeatMonitor();
+        setRole(RaftRole.Candidate,"changeToCandidate");
+        startLeaderElection();
     }
 
     void changeToLeader(){
+        LOG.info("leader election success");
         Preconditions.assertTrue(isCandidate(),"not candidate");
-        //TODO shutdownElectiondaemon
+        shutdownElectiondaemon();
         setRole(RaftRole.Leader,"changeToLeader");
         serverState.becomLeader();
-        //TODO start sending AppendEntries RPC to followers
-        LeaderState leaderState = new LeaderState(this);
+        // start sending AppendEntries RPC to followers
+        leaderState = new LeaderState(this);
         leaderState.start();
     }
 
@@ -119,30 +145,38 @@ public class RaftServerImpl {
         if(old!=RaftRole.Follower){
             setRole(RaftRole.Follower,"changeToFollower");
             if(old==RaftRole.Leader){
-                //TODO shutdownLeaderState();
+                shutDownLeaderState();
             }else if(old == RaftRole.Candidate){
-                //TODO shutdownElectiondaemon
+                shutdownElectiondaemon();
             }
             startHeartBeatMonitor();
         }
     }
 
-    public void startHeartBeatMonitor(){
-        FollowerState heartBeatMonitor = new FollowerState(this);
-        heartBeatMonitor.start();
+    public void resetElectionTimeOut(){
+        LOG.info("reset electionTime out");
+        heartBeatMonitor.updateLastHeartBeatRpcTime();
     }
-
 
     int getRandomTimeOutMs(){
         return MinTimeOutMs+ThreadLocalRandom.current().nextInt(MaxTimeOutMs-MinTimeOutMs+1);
     }
 
 
-    public RequestVoteReply sendRequestVote(RaftPeer peer,RequestVoteArgs args){
-        RpcClient client = new NettyRpcClient();
-        client.connect(NetUtils.createSocketAddr(peer.getAddress(),-1));
-        RaftService raftService = new ClientProxy(client).getProxy(RaftService.class);
+    //TODO 同一个地址创建多个本地IP地址
+    public RequestVoteReply sendRequestVote(RaftPeerId peerId,RequestVoteArgs args){
+        RaftService raftService = null;
+        try {
+
+            raftService = new NettyClientProxy(NetUtils.createSocketAddr(getPeer(peerId).getAddress(),-1)).getProxy(RaftService.class);
+            //raftService = new NettyClientProxy("localhost",8080).getProxy(RaftService.class);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        LOG.info("sendRequestVote request");
         RequestVoteReply res = raftService.RequestVote(args);
+        LOG.info("sendRequestVote got reply");
         return res;
     }
 
@@ -158,10 +192,14 @@ public class RaftServerImpl {
         return args;
     }
 
-    public AppendEntriesReply sendAppendEntries(RaftPeer peer, AppendEntriesArgs args){
-        RpcClient client = new NettyRpcClient();
-        client.connect(NetUtils.createSocketAddr(peer.getAddress(),-1));
-        RaftService raftService = new ClientProxy(client).getProxy(RaftService.class);
+    public AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args){
+        RaftService raftService = null;
+        try {
+            raftService = new NettyClientProxy(NetUtils.createSocketAddr(getPeer(peerId).getAddress(),-1)).getProxy(RaftService.class);
+            //raftService = new NettyClientProxy("localhost",8080).getProxy(RaftService.class);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         AppendEntriesReply res = raftService.AppendEntries(args);
         return res;
     }
@@ -173,21 +211,29 @@ public class RaftServerImpl {
     }*/
 
     public void start(){
-        nettyRpcServer = new NettyRpcServer(configuration.getPort());
         DefaultRegistry registry = new DefaultRegistry();
-        registry.register(new RaftServiceImpl());
-        nettyRpcServer.start();
+        registry.register(new RaftServiceImpl(this));
+        startAsFollower();
     }
 
 
 
     public void shutdown(){
-        nettyRpcServer.shutDown();
+        //follower 和 leader心跳，超时则转为candidate
+        heartBeatMonitor.stopRunning();
+        //candidate 发起选举
+        electionDaemon.stopRunning();
+        //leader 停止发送心跳
+        leaderState.stopRunning();
     }
 
 
     public  boolean isFollower(){
         return role==RaftRole.Follower;
+    }
+
+    public  boolean isLeader(){
+        return role==RaftRole.Leader;
     }
 
     public boolean isCandidate(){
@@ -197,5 +243,10 @@ public class RaftServerImpl {
 /**
  * 流程梳理
  * 1.start as follower
- * 2.canvas votes
+ * 2.canvas votes,
+ * turn to candidate,
+ * send request votes,
+ * turn to leader
+ * 3.leader send heart beat append entries to follower
+ * 4.follower reset their election timer.
  */

@@ -57,6 +57,6 @@ public class DefaultRegistry {
         DefaultRegistry defaultRegistry = new DefaultRegistry();
         defaultRegistry.register(new EatServiceImpl());
         Object x = defaultRegistry.getService(EatService.class.getCanonicalName());
-        System.out.println();
+        System.out.println(x);
     }
 }

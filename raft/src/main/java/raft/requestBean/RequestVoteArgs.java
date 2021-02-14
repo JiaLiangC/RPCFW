@@ -3,6 +3,10 @@ package raft.requestBean;
 import java.util.Objects;
 
 public class RequestVoteArgs {
+
+    RequestVoteArgs(){
+
+    }
     //候选人的任期号
     private int  Term;
     //候选人 id
@@ -20,6 +24,22 @@ public class RequestVoteArgs {
 
     public static  Builder newBuilder(){
         return new RequestVoteArgs.Builder();
+    }
+
+    public int getTerm() {
+        return Term;
+    }
+
+    public void setTerm(int term) {
+        Term = term;
+    }
+
+    public String getCandidateId() {
+        return CandidateId;
+    }
+
+    public void setCandidateId(String candidateId) {
+        CandidateId = candidateId;
     }
 
     public static class Builder{

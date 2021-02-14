@@ -16,7 +16,7 @@ public class RequestVoteHandler implements  Runnable{
     public void run() {
         if (serverState.getRole()== RaftRole.Candidate){
             if(reply.getTerm() > serverState.getCurrentTerm()){
-                serverState.turnToFollower();
+                //serverState.turnToFollower();
                 //TODO reset election timer
                 return;
             }

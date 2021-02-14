@@ -28,6 +28,8 @@ public class NettyRpcClient implements RpcClient{
     private Bootstrap bootstrap;
     NioEventLoopGroup group = new NioEventLoopGroup();
 
+    private ChannelFuture  severChannel;
+
     public NettyRpcClient() {
     //public NettyRpcClient(String host, int port) {
         //this.host = host;
@@ -52,13 +54,23 @@ public class NettyRpcClient implements RpcClient{
     public void connect(InetSocketAddress address){
 
         //TODO netty 异步操作返回的future
-        ChannelFuture channelFuture = bootstrap.connect(address);
+        try {
+            severChannel = bootstrap.connect(address).sync();
+            logger.info("rpc client connected to server success");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void connect(String host, int port){
         //TODO netty 异步操作返回的future
-        ChannelFuture channelFuture = bootstrap.connect(host,port);
+        try {
+            severChannel = bootstrap.connect(host,port).sync();
+            logger.info("rpc client connected to server success");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -66,9 +78,8 @@ public class NettyRpcClient implements RpcClient{
     @Override
     public Object sendRpcRequest(RPCRequest rpcRequest){
         try {
-            ChannelFuture channelFuture = bootstrap.connect(host, port).sync();
-            logger.info("rpc client connected to server success");
-            Channel channel = channelFuture.channel();
+            //ChannelFuture channelFuture = bootstrap.connect(host, port).sync();
+            Channel channel = severChannel.channel();
             if(channel!=null){
                 channel.writeAndFlush(rpcRequest).addListener(future->{
                     if (future.isSuccess()){
@@ -91,6 +102,11 @@ public class NettyRpcClient implements RpcClient{
 
         return null;
 
+    }
+
+    @Override
+    public void close() {
+        severChannel.channel().close();
     }
 
 }

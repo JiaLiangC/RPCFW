@@ -2,7 +2,7 @@ package RPCFW.RPCDemo.Nio.client;
 
 import RPCFW.HelloMessage;
 import RPCFW.HelloService;
-import RPCFW.Transport.ClientProxy;
+import RPCFW.Transport.client.ClientProxy;
 import RPCFW.Transport.client.RpcClient;
 import RPCFW.Transport.client.SocketRpcClient;
 

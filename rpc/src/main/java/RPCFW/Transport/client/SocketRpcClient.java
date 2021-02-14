@@ -5,6 +5,7 @@ import RPCFW.Transport.common.RPCRequest;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class SocketRpcClient implements RpcClient{
@@ -17,6 +18,17 @@ public class SocketRpcClient implements RpcClient{
     }
 
     @Override
+    public void connect(InetSocketAddress address) {
+
+    }
+
+    @Override
+    public void connect(String host, int port) {
+
+    }
+
+    //TODO refactor connect
+    @Override
     public Object sendRpcRequest(RPCRequest rpcRequest) {
         try(Socket socket = new Socket(host,port)) {
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
@@ -28,5 +40,9 @@ public class SocketRpcClient implements RpcClient{
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public void close() {
     }
 }

@@ -4,6 +4,10 @@ import RPCFW.RPCDemo.Netty.EatServiceImpl;
 import RPCFW.ServiceManager.registry.DefaultRegistry;
 import RPCFW.Transport.server.NettyRpcServer;
 import RPCFW.Transport.server.RpcServer;
+import raft.common.RaftPeer;
+import raft.common.id.RaftId;
+import raft.common.id.RaftPeerId;
+import raft.common.utils.NetUtils;
 
 import java.net.InetSocketAddress;
 
@@ -42,12 +46,12 @@ public class NettyRpcService implements RaftServerRpc {
 
     private  NettyRpcService(RaftServer raftServer){
         this.raftServer=raftServer;
-
-        DefaultRegistry registry = new DefaultRegistry();
-        registry.register(new RaftServiceImpl());
-
-        this.rpcServer = new NettyRpcServer(8080);
-
+        //TODO 从配置文件或者使用默认端口
+        RaftPeerId id = raftServer.getId();
+        RaftPeer peer = raftServer.getPeer(id);
+        InetSocketAddress socketAddress = NetUtils.createSocketAddr( peer.getAddress(),-1);
+        int port = socketAddress.getPort();
+        this.rpcServer = new NettyRpcServer(port);
     }
 
 
@@ -58,6 +62,7 @@ public class NettyRpcService implements RaftServerRpc {
 
     @Override
     public InetSocketAddress getInetSocketAddress() {
+        //TODO
         return null;
     }
 
