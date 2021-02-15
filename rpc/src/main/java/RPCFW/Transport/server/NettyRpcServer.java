@@ -54,11 +54,11 @@ public class NettyRpcServer implements RpcServer {
                 });
 
         channelFuture = serverBootstrap.bind(port);
-        try {
-            channelFuture.channel().closeFuture().sync();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            channelFuture.channel().closeFuture().sync();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
 
 

@@ -31,8 +31,6 @@ public class NettyProtocolDecoder extends LengthFieldBasedFrameDecoder {
     //TODO 魔术位验证
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-
-        logger.info("decode starting ");
          ByteBuf decode =  (ByteBuf) super.decode(ctx, in);
          if(decode!=null){
              Short magicNumber = decode.readShort();

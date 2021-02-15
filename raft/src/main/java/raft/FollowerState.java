@@ -20,16 +20,13 @@ import java.util.concurrent.TimeUnit;
 public class FollowerState extends Daemon {
     public static final Logger LOG = LoggerFactory.getLogger(RaftServerImpl.class);
 
-    private static final long NANOSECONDS_PER_MILLISECOND = 1000000;
     private RaftServerImpl raftServerImpl;
-    private Long lastHeartBeatRpcTime = System.nanoTime();
-    private Long elapsedTime;
+    private volatile RaftTimer lastHeartBeatRpcTime = new RaftTimer();
     private volatile boolean running;
 
 
     FollowerState(RaftServerImpl raftServerImpl){
         this.raftServerImpl = raftServerImpl;
-        this.elapsedTime=0L;
         this.running=true;
     }
 
@@ -38,11 +35,12 @@ public class FollowerState extends Daemon {
     }
 
     public  void updateLastHeartBeatRpcTime(){
-        lastHeartBeatRpcTime = System.nanoTime();
+        lastHeartBeatRpcTime =new RaftTimer();
     }
 
     @Override
     public void run() {
+        updateLastHeartBeatRpcTime();
         LOG.info("startHeartBeatMonitor");
         while (this.running && raftServerImpl.isFollower()){
             try {
@@ -52,7 +50,7 @@ public class FollowerState extends Daemon {
                 if(!raftServerImpl.isFollower()){
                     break;
                 }
-                if(getElapsedTime()>electionTimeoutDur){
+                if(lastHeartBeatRpcTime.getElapsedTime()>electionTimeoutDur){
                     raftServerImpl.changeToCandidate();
                     return;
                 }
@@ -62,8 +60,5 @@ public class FollowerState extends Daemon {
         }
     }
 
-    long getElapsedTime(){
-        elapsedTime =  (System.nanoTime()-lastHeartBeatRpcTime)/NANOSECONDS_PER_MILLISECOND;
-        return elapsedTime;
-    }
+
 }

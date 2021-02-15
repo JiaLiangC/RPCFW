@@ -30,7 +30,6 @@ public class ServerState {
 
     private RaftPeerId leaderId;
     private RaftPeerId selfId;
-    private RaftRole role;
     private RaftServerImpl server;
     private RaftGroup group;
 
@@ -74,11 +73,6 @@ public class ServerState {
 
     public Collection<RaftPeer> getPeers() {
         return group.getRaftPeers();
-    }
-
-
-    public RaftRole getRole() {
-        return role;
     }
 
 

@@ -1,5 +1,11 @@
 package raft;
 
+import raft.common.id.RaftPeerId;
+import raft.requestBean.AppendEntriesArgs;
+import raft.requestBean.AppendEntriesReply;
+import raft.requestBean.RequestVoteArgs;
+import raft.requestBean.RequestVoteReply;
+
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
@@ -25,14 +31,13 @@ public interface RaftServerRpc {
 
         protected abstract B getThis();
         abstract RPC build();
-
-
-
     }
 
-    void start();
+     RequestVoteReply sendRequestVote(RaftPeerId peerId, RequestVoteArgs args);
+     AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args);
+
     InetSocketAddress getInetSocketAddress();
 
-    public String getRpcType();
-
+    String getRpcType();
+    void start();
 }

@@ -31,11 +31,13 @@ public class RaftServerProxy implements RaftServer {
     private static final Logger LOG = LoggerFactory.getLogger(RaftServerProxy.class);
 
     public RaftServerProxy(RaftPeerId id, StateMachine stateMachine, RaftGroup group, RaftProperties properties){
+        this.id = id;
+        this.raftServerImpl = new RaftServerImpl(id, group, this, properties);
         this.stateMachine = stateMachine;
         this.raftProperties=properties;
+        //TODO 重构 raftServerRpc 中 port 解析依赖于 raftServerImpl
         this.raftServerRpc = NettyRpcService.newBuilder().setServer(this).build();
-        this.id = id!=null ? id : RaftPeerId.valueOf(getIdFrom(raftServerRpc));
-        this.raftServerImpl = new RaftServerImpl(id, group, this, properties);
+        //this.id = id!=null ? id : RaftPeerId.valueOf(getIdFrom(raftServerRpc));
     }
 
     public String getIdFrom(RaftServerRpc serverRpc){
@@ -46,6 +48,10 @@ public class RaftServerProxy implements RaftServer {
 
     public StateMachine getStateMachine() {
         return stateMachine;
+    }
+
+    public RaftServerRpc getServerRpc(){
+        return this.raftServerRpc;
     }
 
 

@@ -13,16 +13,16 @@ import java.util.concurrent.TimeUnit;
 public class LeaderState extends Daemon {
 
 
-    private  RaftServerImpl server;
+    private RaftServerImpl server;
     private ServerState serverState;
     private ExecutorService executorService;
     private volatile boolean running;
 
-    public LeaderState(RaftServerImpl server){
-        this.server=server;
+    public LeaderState(RaftServerImpl server) {
+        this.server = server;
         this.serverState = server.getServerState();
         this.executorService = Executors.newFixedThreadPool(serverState.getPeersCount());
-        this.running=true;
+        this.running = true;
     }
 
     @Override
@@ -31,29 +31,31 @@ public class LeaderState extends Daemon {
     }
 
 
-    public void heartbeatDaemon(){
+    public void heartbeatDaemon() {
         ScheduledExecutorService service = Executors.newScheduledThreadPool(10);
-        while (server.isLeader() && running){
-            service.scheduleAtFixedRate(()->{
-                serverState.getPeers().forEach((RaftPeer peer)->{
-                            if(peer.getId()!=serverState.getSelfId()){
-                                executorService.submit(()->{
+        while (server.isLeader() && running) {
+            service.scheduleAtFixedRate(() -> {
+                serverState.getPeers().forEach((RaftPeer peer) -> {
+                            if (peer.getId() != serverState.getSelfId()) {
+                                executorService.submit(() -> {
                                     //TODO construct heartbeat args
                                     AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs();
-                                    AppendEntriesReply reply = server.sendAppendEntries(peer.getId(),args);
-                                    if(!reply.isSuccess()){
-                                        server.changeToFollower();
+                                    AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(peer.getId(), args);
+                                    if (!reply.isSuccess()) {
+                                        if (server.isLeader() && serverState.getCurrentTerm() < reply.getTerm()) {
+                                            server.changeToFollower(reply.getTerm());
+                                        }
                                     }
                                 });
                             }
                         }
                 );
-            }, 0,500, TimeUnit.MILLISECONDS);
+            }, 0, 100, TimeUnit.MILLISECONDS);
         }
     }
 
-    public void stopRunning(){
-        this.running=false;
+    public void stopRunning() {
+        this.running = false;
     }
 
 

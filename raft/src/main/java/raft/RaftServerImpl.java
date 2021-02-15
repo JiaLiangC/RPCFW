@@ -35,8 +35,8 @@ public class RaftServerImpl {
 
     public static final Logger LOG =LoggerFactory.getLogger(RaftServerImpl.class);
 
-    public int MaxTimeOutMs = 900;
-    public int MinTimeOutMs = 400;
+    public int MaxTimeOutMs = 1200;
+    public int MinTimeOutMs = 600;
 
     RaftConfiguration configuration;
 
@@ -74,6 +74,9 @@ public class RaftServerImpl {
         return peerMap.get(id);
     }
 
+    public RaftServerRpc getServrRpc(){
+        return proxy.getServerRpc();
+    }
 
     private void startAsFollower(){
         setRole(RaftRole.Follower,"startAsFollower");
@@ -82,7 +85,7 @@ public class RaftServerImpl {
 
     public void setRole(RaftRole newRole,String op) {
         if(newRole!=role){
-            LOG.info("change role from{} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm(),op);
+            LOG.info("change role from {} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm(),op);
             this.role = newRole;
         }
     }
@@ -140,8 +143,9 @@ public class RaftServerImpl {
         leaderState.start();
     }
 
-    void changeToFollower(){
+    void changeToFollower(int newTerm){
         final RaftRole old = role;
+        serverState.setCurrentTerm(newTerm);
         if(old!=RaftRole.Follower){
             setRole(RaftRole.Follower,"changeToFollower");
             if(old==RaftRole.Leader){
@@ -163,23 +167,6 @@ public class RaftServerImpl {
     }
 
 
-    //TODO 同一个地址创建多个本地IP地址
-    public RequestVoteReply sendRequestVote(RaftPeerId peerId,RequestVoteArgs args){
-        RaftService raftService = null;
-        try {
-
-            raftService = new NettyClientProxy(NetUtils.createSocketAddr(getPeer(peerId).getAddress(),-1)).getProxy(RaftService.class);
-            //raftService = new NettyClientProxy("localhost",8080).getProxy(RaftService.class);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        LOG.info("sendRequestVote request");
-        RequestVoteReply res = raftService.RequestVote(args);
-        LOG.info("sendRequestVote got reply");
-        return res;
-    }
-
     public RequestVoteArgs createRequestVoteRequest(int Term,String candidateId){
         return RequestVoteArgs.newBuilder().setTerm(Term).setCandidateId(candidateId).build();
     }
@@ -192,17 +179,6 @@ public class RaftServerImpl {
         return args;
     }
 
-    public AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args){
-        RaftService raftService = null;
-        try {
-            raftService = new NettyClientProxy(NetUtils.createSocketAddr(getPeer(peerId).getAddress(),-1)).getProxy(RaftService.class);
-            //raftService = new NettyClientProxy("localhost",8080).getProxy(RaftService.class);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        AppendEntriesReply res = raftService.AppendEntries(args);
-        return res;
-    }
 
     /* public  <T> ExecutorCompletionService<T> sendHeartbeat(){
         RpcClient client = new NettyRpcClient("localhost",8080);

@@ -23,7 +23,7 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
         try {
             RpcResponse rpcResponse ;
             RPCRequest rpcRequest = (RPCRequest) msg;
-            logger.info("RpcServerHandler  received messgae {}",rpcRequest);
+            logger.debug("RpcServerHandler  received messgae {}",rpcRequest);
             Object service = new DefaultRegistry().getService(rpcRequest.getInterfaceName());
             Method method = service.getClass().getMethod(rpcRequest.getMethodName(),rpcRequest.getParameterTypes());
 
@@ -34,7 +34,6 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
             Object res = method.invoke(service,rpcRequest.getParameters());
             rpcResponse = RpcResponse.success(res);
             ChannelFuture channelFuture = ctx.writeAndFlush(rpcResponse);
-            logger.info(" rpc server write response,{}",rpcResponse.getData());
             //异步回调结束后自动关闭channel
             channelFuture.addListener(ChannelFutureListener.CLOSE);
         }finally {

@@ -50,13 +50,13 @@ public class RaftServiceImpl implements RaftService {
         }
 
         //收到的任期大于自己就更新自己任期
-        if(args.getTerm()> serverState.getCurrentTerm()){
+        if(args.getTerm() > serverState.getCurrentTerm()){
             serverState.setCurrentTerm(args.getTerm());
         }
 
         //收到的任期大于自己，且自己是 leader ，可能是网络隔离后的老的leader
-        if(server.isLeader()){
-            server.changeToFollower();
+        if(server.isLeader() || server.isCandidate()){
+            server.changeToFollower(args.getTerm());
         }
 
         //重置自己的选举超时
@@ -95,14 +95,11 @@ public class RaftServiceImpl implements RaftService {
         //如果任期相等就不管，可能是其他候选者发来的投票请求
         if(args.getTerm()> serverState.getCurrentTerm()){
             reply.setTerm(serverState.getCurrentTerm());
-            //TODO 如果不是follower 就转为follower，如果是就不管
-            if(!server.isFollower()){
-                server.changeToFollower();
-            }
+            server.changeToFollower(args.getTerm());
         }
 
 
-        if(serverState.getVotedFor() ==null){
+        if(serverState.getVotedFor() == null){
             serverState.setVotedFor(RaftPeerId.valueOf(args.getCandidateId()));
             //重置自己的选举超时
             server.resetElectionTimeOut();

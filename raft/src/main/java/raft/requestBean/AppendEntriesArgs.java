@@ -7,6 +7,7 @@ public class AppendEntriesArgs {
     private String LeaderId;
     private List<Entry> Entries;
 
+    AppendEntriesArgs(){}
 
     private  AppendEntriesArgs(int Term, String LeaderId, List<Entry> entries){
         this.Term=Term;

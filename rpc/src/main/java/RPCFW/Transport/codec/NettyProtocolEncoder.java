@@ -24,12 +24,9 @@ public class NettyProtocolEncoder extends MessageToByteEncoder<Object> {
     // 这里Object 是 RpcRequest 心跳包或者是其他的对象，这里主要负责组装协议，序列化对象
     @Override
     protected void encode(ChannelHandlerContext channelHandlerContext, Object o, ByteBuf byteBuf) throws Exception {
-        logger.info("NettyProtocolEncoder starting");
-
         if (o!=null){
              byte [] body =  serializer.encode(o);
              int bodylenth = body.length;
-            logger.info("encoded body length is {}",bodylenth);
              int headerLength = 0;
              byte version = 0;
              int sessionId = new Random().nextInt();
