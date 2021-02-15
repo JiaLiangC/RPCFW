@@ -33,7 +33,7 @@ public class BaseStateMachine implements StateMachine {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
     }
 }

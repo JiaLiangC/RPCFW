@@ -25,7 +25,8 @@ public class RaftPeerId {
         this.id = ByteString.copyFrom(idString, StandardCharsets.UTF_8);
     }
 
-    public  String getString(){
+    @Override
+    public  String toString(){
         return this.idString;
     }
 

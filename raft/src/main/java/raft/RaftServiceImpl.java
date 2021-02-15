@@ -40,7 +40,7 @@ public class RaftServiceImpl implements RaftService {
      **/
     @Override
     public AppendEntriesReply AppendEntries(AppendEntriesArgs args) {
-        LOG.info("got AppendEntries request");
+        LOG.info("--------------------- got AppendEntries request");
         AppendEntriesReply reply =  new AppendEntriesReply();
         //如果对方任期比自己小,过期心跳，就拒绝(可能是网络隔离后恢复的一台leader发来的心跳)
         if (args.getTerm()< serverState.getCurrentTerm()){
@@ -60,7 +60,9 @@ public class RaftServiceImpl implements RaftService {
         }
 
         //重置自己的选举超时
-        server.resetElectionTimeOut();
+        if(server.isFollower()){
+            server.resetElectionTimeOut();
+        }
 
         //TODO 日志处理
 
@@ -80,7 +82,7 @@ public class RaftServiceImpl implements RaftService {
      **/
     @Override
     public RequestVoteReply RequestVote(RequestVoteArgs args) {
-        LOG.info("RaftRPC impl server:{} at term:{} get RequestVote req,cid:{}, cterm:{}",serverState.getSelfId().getString(),serverState.getCurrentTerm(),
+        LOG.info("RaftRPC impl server:{} at term:{} get RequestVote req,cid:{}, cterm:{}",serverState.getSelfId(),serverState.getCurrentTerm(),
                 args.getCandidateId(),args.getTerm());
         RequestVoteReply reply = new RequestVoteReply();
 
@@ -103,7 +105,7 @@ public class RaftServiceImpl implements RaftService {
             serverState.setVotedFor(RaftPeerId.valueOf(args.getCandidateId()));
             //重置自己的选举超时
             server.resetElectionTimeOut();
-            LOG.info("RaftRPC impl RequestVote resetElectionTimeOut server:{} at term:{} get RequestVote req,cid:{}, cterm:{}",serverState.getSelfId().getString(),serverState.getCurrentTerm(),
+            LOG.info("RaftRPC impl RequestVote resetElectionTimeOut server:{} at term:{} get RequestVote req,cid:{}, cterm:{}",serverState.getSelfId(),serverState.getCurrentTerm(),
                     args.getCandidateId(),args.getTerm());
             reply.setVoteGranted(true);
         }else {

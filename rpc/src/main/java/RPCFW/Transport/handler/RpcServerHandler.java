@@ -18,25 +18,34 @@ import java.lang.reflect.Method;
 public class RpcServerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(RpcServerHandler.class);
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        String MethodName="null";
         try {
             RpcResponse rpcResponse ;
             RPCRequest rpcRequest = (RPCRequest) msg;
             logger.debug("RpcServerHandler  received messgae {}",rpcRequest);
             Object service = new DefaultRegistry().getService(rpcRequest.getInterfaceName());
+            MethodName = rpcRequest.getMethodName();
+            if (rpcRequest.getMethodName()=="AppendEntries"){
+                logger.info("xxxxx11xxx");
+            }
             Method method = service.getClass().getMethod(rpcRequest.getMethodName(),rpcRequest.getParameterTypes());
 
             if (method==null){
                 rpcResponse =  RpcResponse.fail(RpcResponseCode.MethodNotFound);
             }
 
+
             Object res = method.invoke(service,rpcRequest.getParameters());
-            rpcResponse = RpcResponse.success(res);
+            rpcResponse = RpcResponse.success(res,rpcRequest.getUid());
             ChannelFuture channelFuture = ctx.writeAndFlush(rpcResponse);
             //异步回调结束后自动关闭channel
             channelFuture.addListener(ChannelFutureListener.CLOSE);
-        }finally {
+        }catch (Exception e){
+            logger.error("error: MethodName{} ", MethodName);
+            e.printStackTrace();
+        }
+        finally {
             //手动释放对象，加速内存回收
             ReferenceCountUtil.release(msg);
         }

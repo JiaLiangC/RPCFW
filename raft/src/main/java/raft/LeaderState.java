@@ -1,28 +1,33 @@
 package raft;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import raft.common.Daemon;
 import raft.common.RaftPeer;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Collection;
+import java.util.concurrent.*;
 
 public class LeaderState extends Daemon {
+    public static final Logger LOG = LoggerFactory.getLogger(LeaderState.class);
 
+    //TODO 线程池吞没异常
 
     private RaftServerImpl server;
     private ServerState serverState;
     private ExecutorService executorService;
     private volatile boolean running;
 
+    private Collection<RaftPeer> others;
+
     public LeaderState(RaftServerImpl server) {
         this.server = server;
         this.serverState = server.getServerState();
-        this.executorService = Executors.newFixedThreadPool(serverState.getPeersCount());
+        this.executorService = Executors.newFixedThreadPool(10);
         this.running = true;
+        this.others = serverState.getOtherPeers();
     }
 
     @Override
@@ -32,25 +37,49 @@ public class LeaderState extends Daemon {
 
 
     public void heartbeatDaemon() {
-        ScheduledExecutorService service = Executors.newScheduledThreadPool(10);
+        LOG.info("LeaderState heartbeatDaemon start");
+
         while (server.isLeader() && running) {
-            service.scheduleAtFixedRate(() -> {
-                serverState.getPeers().forEach((RaftPeer peer) -> {
-                            if (peer.getId() != serverState.getSelfId()) {
-                                executorService.submit(() -> {
-                                    //TODO construct heartbeat args
-                                    AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs();
+                others.forEach((RaftPeer peer) -> {
+                /*    CompletableFuture.supplyAsync(()->{
+                        LOG.info("xxxxxxxxx leader send heart  start");
+                        //TODO construct heartbeat args
+                        AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs();
+                        AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(peer.getId(), args);
+                        return reply;
+                    }).thenAccept(reply->{
+                        if (!reply.isSuccess()) {
+                            LOG.info("xxxxxxxxx leader send heart beat failed");
+                            if (server.isLeader() && serverState.getCurrentTerm() < reply.getTerm()) {
+                                server.changeToFollower(reply.getTerm());
+                            }
+                        }
+                    }).exceptionally(e->{
+                        e.printStackTrace();
+                        return null;
+                    });*/
+                            executorService.submit(() -> {
+                                AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs();
+                                try {
                                     AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(peer.getId(), args);
                                     if (!reply.isSuccess()) {
+                                        LOG.info("xxxxxxxxx leader send heart beat failed");
                                         if (server.isLeader() && serverState.getCurrentTerm() < reply.getTerm()) {
                                             server.changeToFollower(reply.getTerm());
                                         }
                                     }
-                                });
-                            }
+                                }catch (Exception e){
+                                    e.printStackTrace();
+                                }
+
+                            });
                         }
                 );
-            }, 0, 100, TimeUnit.MILLISECONDS);
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 

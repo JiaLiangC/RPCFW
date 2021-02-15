@@ -1,6 +1,7 @@
 package RPCFW.Transport.common;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 public class RPCRequest implements Serializable {
     private String methodName;
@@ -8,6 +9,7 @@ public class RPCRequest implements Serializable {
     private Object[] parameters;
     private Class<?>[] parameterTypes;
     private static final long serialVersionUID = 1L;
+    private String uid;
 
     public RPCRequest() {
     }
@@ -17,6 +19,7 @@ public class RPCRequest implements Serializable {
         this.interfaceName = interfaceName;
         this.parameters = parameters;
         this.parameterTypes = parameterTypes;
+        this.uid= UUID.randomUUID().toString();
     }
 
     private RPCRequest(Builder builder){
@@ -39,6 +42,14 @@ public class RPCRequest implements Serializable {
 
     public String getInterfaceName() {
         return interfaceName;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
     }
 
 

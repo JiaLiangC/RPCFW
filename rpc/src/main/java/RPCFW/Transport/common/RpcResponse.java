@@ -5,13 +5,15 @@ public class RpcResponse<T> {
     private Integer code;
     private String message;
     private T data;
+    private String uid;
 
     public RpcResponse() {
     }
 
-    public static <T>  RpcResponse success(T data){
+    public static <T>  RpcResponse success(T data,String uid){
         RpcResponse rpcResponse = new RpcResponse();
         rpcResponse.setCode(RpcResponseCode.SUCCESS.getCode());
+        rpcResponse.setUid(uid);
 
         if(data!=null){
             rpcResponse.setData(data);
@@ -48,5 +50,13 @@ public class RpcResponse<T> {
 
     public T getData() {
         return data;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
     }
 }

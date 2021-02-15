@@ -24,4 +24,10 @@ public class RpcClientHandler extends ChannelInboundHandlerAdapter {
         ctx.channel().close().sync();
         ReferenceCountUtil.release(msg);
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.error("异常信息：",cause);
+        super.exceptionCaught(ctx, cause);
+    }
 }

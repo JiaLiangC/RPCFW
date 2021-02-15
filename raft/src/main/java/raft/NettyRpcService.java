@@ -69,6 +69,18 @@ public class NettyRpcService implements RaftServerRpc {
         }
     }
 
+    @Override
+    public void newProxyAndSendRpcTest(){
+        try {
+            NettyClientProxy p = new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(raftServer.getId()).getAddress(),-1));
+            RaftService raftService = p.getProxy(RaftService.class);
+            String res = raftService.rpcTest();
+            LOG.info("-----------test rpc---------{}",res);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Override
     public RequestVoteReply sendRequestVote(RaftPeerId peerId, RequestVoteArgs args){
@@ -82,6 +94,13 @@ public class NettyRpcService implements RaftServerRpc {
     public AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args){
         RaftService raftService = proxy.getProxy(RaftService.class);
         AppendEntriesReply res = raftService.AppendEntries(args);
+        return res;
+    }
+
+    @Override
+    public String sendRpcTest(){
+        RaftService raftService = proxy.getProxy(RaftService.class);
+        String res = raftService.rpcTest();
         return res;
     }
 

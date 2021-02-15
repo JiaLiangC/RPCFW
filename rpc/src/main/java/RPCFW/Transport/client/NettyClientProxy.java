@@ -11,15 +11,23 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.AttributeKey;
+import io.netty.util.ReferenceCountUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 
@@ -32,6 +40,7 @@ import java.util.concurrent.ExecutionException;
  * @date 2021/02/14
  */
 public class NettyClientProxy implements InvocationHandler,Closeable{
+    public final static Logger LOG = LoggerFactory.getLogger(NettyClientProxy.class);
 
     private final Connection connection;
     private InetSocketAddress address;
@@ -47,13 +56,34 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
     }
 
 
+    public boolean isClientChannelClosed(){
+        return   this.connection.isClientChannelClosed();
+    }
+
+    public void updateClientChannel(){
+
+    }
+
+
+
+
     class  Connection implements Closeable {
 
-        private final NettyClient client = new NettyClient();
-        private final Queue<CompletableFuture<RpcResponse>> replies = new LinkedList();
+        private  NettyClient client ;
+        //private final Queue<CompletableFuture<RpcResponse>> replies = new LinkedList();
+        private final Map<String,CompletableFuture<RpcResponse>> replies = new ConcurrentHashMap<>();
+        private  final  EventLoopGroup group;
+
         Connection(EventLoopGroup group) throws InterruptedException {
-            final ChannelInboundHandler inboundHandler =
-                    new SimpleChannelInboundHandler<RpcResponse>() {
+            this.group =group;
+            /* final ChannelInboundHandler inboundHandler =
+                   new SimpleChannelInboundHandler<RpcResponse>() {
+                        @Override
+                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                            LOG.error("异常信息：{}",cause.getMessage());
+                            cause.printStackTrace();
+                            super.exceptionCaught(ctx, cause);
+                        }
 
                         @Override
                         protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse rpcResponse) throws Exception {
@@ -64,9 +94,37 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
                             }
                             future.complete(rpcResponse);
                         }
-                    };
+                    };*/
 
-            final ChannelInitializer<SocketChannel> initializer= new ChannelInitializer<SocketChannel>() {
+            clientInit();
+        }
+
+         void clientInit() {
+            this.client = new NettyClient();
+             final ChannelInboundHandler inboundHandler = new ChannelInboundHandlerAdapter(){
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                    RpcResponse rpcResponse = (RpcResponse) msg;
+                    CompletableFuture<RpcResponse> future = poolReply(rpcResponse.getUid());
+                    if(future==null){
+                        //TODO add rpc id for debug
+                        LOG.info("Request not found------------");
+                        //throw  new IllegalStateException("Request not found");
+                    }
+                    future.complete(rpcResponse);
+                    ctx.channel().close().sync();
+                    ReferenceCountUtil.release(msg);
+                    //super.channelRead(ctx, msg);
+                }
+
+                @Override
+                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                    LOG.error("异常信息：",cause);
+                    super.exceptionCaught(ctx, cause);
+                }
+            };
+
+             final ChannelInitializer<SocketChannel>  initializer = new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
                     socketChannel.pipeline()
@@ -77,18 +135,33 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
                 }
             };
 
-            client.connect(address,group,initializer);
+            try {
+                client.connect(address,group,initializer);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
-        CompletableFuture<RpcResponse> poolReply(){
-            return replies.poll();
+
+        CompletableFuture<RpcResponse> poolReply(String reqId){
+            return replies.get(reqId);
         }
 
         ChannelFuture offer(RPCRequest rpcRequest, CompletableFuture<RpcResponse> reply){
-            replies.offer(reply);
-            return client.writeAndFlush(rpcRequest);
+            if(connection.isClientChannelClosed()){
+                clientInit();
+            }
+            replies.putIfAbsent(rpcRequest.getUid(),reply);
+            return   client.writeAndFlush(rpcRequest);
         }
 
+        synchronized public boolean isClientChannelClosed(){
+            return client.channelClosed();
+        }
+
+        synchronized void updateClient() {
+            clientInit();
+        }
 
         @Override
         public void close()  {
@@ -104,14 +177,21 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        RPCRequest rpcRequest = new RPCRequest.Builder().setInterfaceName(method.getDeclaringClass().getName())
-                .setMethodName(method.getName())
-                .setParameters(args)
-                .setParameterTypes(method.getParameterTypes())
-                .build();
-        //Object result = client.sendRpcRequest(rpcRequest);
-        RpcResponse result = send(rpcRequest);
-        return result.getData();
+        try {
+            RPCRequest rpcRequest = new RPCRequest.Builder().setInterfaceName(method.getDeclaringClass().getName())
+                    .setMethodName(method.getName())
+                    .setParameters(args)
+                    .setParameterTypes(method.getParameterTypes())
+                    .build();
+            //Object result = client.sendRpcRequest(rpcRequest);
+            RpcResponse result = send(rpcRequest);
+            return result.getData();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return null;
+        //return result.getData();
     }
 
 
@@ -124,15 +204,22 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
             channelFuture.sync();
             return reply.get();
         } catch (InterruptedException e) {
-            throw new IOException("send request Interrupted");
+            if(isClientChannelClosed()){
+                LOG.error("..................................");
+                //connection.updateClient();
+
+            }
+            e.printStackTrace();
+            //throw new IOException("send request Interrupted");
         } catch (ExecutionException e) {
             e.printStackTrace();
-            throw  new IOException("execute failed");
+            //throw  new IOException("execute failed");
         }
+        return null;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         connection.close();
     }
 

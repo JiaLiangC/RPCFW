@@ -20,6 +20,7 @@ public class RPCTest {
         t.start();
         //DefaultRegistry registry = new DefaultRegistry();
        /* RpcClient client = new NettyRpcClient();
+
         client.connect("localhost",8081);
         RaftService raftService = new ClientProxy(client).getProxy(RaftService.class);*/
 

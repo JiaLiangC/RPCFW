@@ -23,12 +23,13 @@ public class NettyProtocolEncoder extends MessageToByteEncoder<Object> {
     //不固定位：不定长消息头扩展，不定长消息体
     // 这里Object 是 RpcRequest 心跳包或者是其他的对象，这里主要负责组装协议，序列化对象
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, Object o, ByteBuf byteBuf) throws Exception {
+    protected void encode(ChannelHandlerContext channelHandlerContext, Object o, ByteBuf byteBuf) {
         if (o!=null){
              byte [] body =  serializer.encode(o);
              int bodylenth = body.length;
              int headerLength = 0;
              byte version = 0;
+             //TODO session num generator
              int sessionId = new Random().nextInt();
             MessageTypeEnum messageTypeEnum = MessageTypeEnum.REQUEST;
 

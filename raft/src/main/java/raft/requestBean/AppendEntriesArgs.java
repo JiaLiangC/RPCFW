@@ -5,14 +5,14 @@ import java.util.List;
 public class AppendEntriesArgs {
     private int Term;
     private String LeaderId;
-    private List<Entry> Entries;
+//    private List<Entry> Entries;
 
     AppendEntriesArgs(){}
 
     private  AppendEntriesArgs(int Term, String LeaderId, List<Entry> entries){
         this.Term=Term;
         this.LeaderId=LeaderId;
-        this.Entries = entries;
+//        this.Entries = entries;
     }
 
     private  AppendEntriesArgs(Builder b){
@@ -21,30 +21,6 @@ public class AppendEntriesArgs {
 
     public static Builder newBuilder(){
         return new Builder();
-    }
-
-    public int getTerm() {
-        return Term;
-    }
-
-    public void setTerm(int term) {
-        Term = term;
-    }
-
-    public String getLeaderId() {
-        return LeaderId;
-    }
-
-    public void setLeaderId(String leaderId) {
-        LeaderId = leaderId;
-    }
-
-    public List<Entry> getEntries() {
-        return Entries;
-    }
-
-    public void setEntries(List<Entry> entries) {
-        Entries = entries;
     }
 
     public static class Builder{
@@ -72,4 +48,28 @@ public class AppendEntriesArgs {
         }
 
     }
+
+    public int getTerm() {
+        return Term;
+    }
+
+    public void setTerm(int term) {
+        Term = term;
+    }
+
+    public String getLeaderId() {
+        return LeaderId;
+    }
+
+    public void setLeaderId(String leaderId) {
+        LeaderId = leaderId;
+    }
+
+//    public List<Entry> getEntries() {
+//        return Entries;
+//    }
+//
+//    public void setEntries(List<Entry> entries) {
+//        Entries = entries;
+//    }
 }

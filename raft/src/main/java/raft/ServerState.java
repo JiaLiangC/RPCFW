@@ -1,8 +1,5 @@
 package raft;
 
-import RPCFW.Transport.server.NettyRpcServer;
-import com.esotericsoftware.minlog.Log;
-import org.slf4j.LoggerFactory;
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
@@ -10,8 +7,8 @@ import raft.common.id.RaftPeerId;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 //为啥引入其他地方static的log包
 import static raft.RaftServerImpl.LOG;
@@ -33,12 +30,6 @@ public class ServerState {
     private RaftServerImpl server;
     private RaftGroup group;
 
-
-    public int initEleciton(){
-        votedFor=selfId;
-        setLeader(null,"initEleciton");
-        return  ++currentTerm;
-    }
 
     public  ServerState(RaftPeerId peerId, RaftGroup group, RaftProperties properties,RaftServerImpl server,StateMachine stateMachine){
         this.selfId=peerId;
@@ -64,12 +55,18 @@ public class ServerState {
 
     public void setLeader(RaftPeerId newLeaderId,String operation){
         if(!Objects.equals(newLeaderId,leaderId)){
-            LOG.info("{} change leader from {} to {} at term {}, for {}",selfId,
+            LOG.info("server:{} change leader from {} to {} at term {}, for {}",selfId,
                     leaderId,newLeaderId,getCurrentTerm(),operation);
             leaderId=newLeaderId;
         }
     }
 
+    synchronized public int initEleciton(){
+        LOG.info("server:{} initEleciton term:{}",selfId, currentTerm+1);
+        votedFor=selfId;
+        setLeader(null,"initEleciton");
+        return  ++currentTerm;
+    }
 
     public Collection<RaftPeer> getPeers() {
         return group.getRaftPeers();
@@ -107,5 +104,9 @@ public class ServerState {
 
     public void setSelfId(RaftPeerId selfId) {
         this.selfId = selfId;
+    }
+
+    Collection<RaftPeer> getOtherPeers(){
+        return group.getRaftPeers().stream().filter((peer)->peer.getId().toString() != getSelfId().toString()).collect(Collectors.toList());
     }
 }

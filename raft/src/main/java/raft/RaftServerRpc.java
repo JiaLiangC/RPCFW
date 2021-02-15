@@ -18,26 +18,34 @@ import java.util.Objects;
  */
 public interface RaftServerRpc {
 
-    abstract class Builder<B extends Builder,RPC extends RaftServerRpc>{
+    abstract class Builder<B extends Builder, RPC extends RaftServerRpc> {
         private RaftServer raftServer;
-        public RaftServer getServer(){
-            return Objects.requireNonNull(raftServer,"server filed is not initialized");
+
+        public RaftServer getServer() {
+            return Objects.requireNonNull(raftServer, "server filed is not initialized");
         }
 
-        public B setServer(RaftServer raftServer){
-            this.raftServer=raftServer;
+        public B setServer(RaftServer raftServer) {
+            this.raftServer = raftServer;
             return getThis();
         }
 
         protected abstract B getThis();
+
         abstract RPC build();
     }
 
-     RequestVoteReply sendRequestVote(RaftPeerId peerId, RequestVoteArgs args);
-     AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args);
+    RequestVoteReply sendRequestVote(RaftPeerId peerId, RequestVoteArgs args);
+
+    AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args);
 
     InetSocketAddress getInetSocketAddress();
 
     String getRpcType();
+
     void start();
+
+    public String sendRpcTest();
+    public void newProxyAndSendRpcTest();
 }
+

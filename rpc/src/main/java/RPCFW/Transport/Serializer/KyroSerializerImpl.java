@@ -3,6 +3,8 @@ package RPCFW.Transport.Serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -10,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class KyroSerializerImpl implements Serializer {
+    public static final Logger LOG = LoggerFactory.getLogger(KyroSerializerImpl.class);
     private static final ThreadLocal<Kryo> kryoLocal = ThreadLocal.withInitial(() -> {
         Kryo kryo = new Kryo();
         //支持对象循环引用（否则会栈溢出）
@@ -27,6 +30,7 @@ public class KyroSerializerImpl implements Serializer {
             //手动remove 加快内存释放
             return output.toBytes();
         } catch (IOException e) {
+            LOG.error("KyroSerializerImpl exception: {}", e.getMessage());
             e.printStackTrace();
         }finally {
             kryoLocal.remove();

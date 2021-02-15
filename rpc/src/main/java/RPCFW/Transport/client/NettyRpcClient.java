@@ -40,7 +40,7 @@ public class NettyRpcClient implements RpcClient{
                 .handler(new ChannelInitializer<SocketChannel>() {
 
                     @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
+                    protected void initChannel(SocketChannel socketChannel)  {
                         socketChannel.pipeline()
                                 .addLast(new LoggingHandler(LogLevel.DEBUG))
                                 .addLast(new NettyProtocolEncoder())

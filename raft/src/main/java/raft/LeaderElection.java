@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class LeaderElection extends Daemon {
     public static final Logger LOG = LoggerFactory.getLogger(LeaderElection.class);
@@ -32,9 +31,8 @@ public class LeaderElection extends Daemon {
         this.server = server;
         this.serverState = server.getServerState();
         this.running = true;
-        this.others=getOtherPeers(serverState.getPeers());
+        this.others=serverState.getOtherPeers();
         initExecutor();
-        LOG.info("LeaderElection peerCount is {}", serverState.getPeersCount());
     }
 
     private void initExecutor(){
@@ -56,8 +54,13 @@ public class LeaderElection extends Daemon {
     public void canvassVotes() {
         //不断选举家直到结束，此时选举超时daemon 在转变为 candidate时已经关闭，无需等待超时后再开始选举
         while (running && server.isCandidate()) {
+            try {
+                Thread.sleep(server.getRandomTimeOutMs());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             serverState.initEleciton();
-            LOG.info("server:[{}] term:[{}] candidate start canvassVotes", serverState.getSelfId().getString(), serverState.getCurrentTerm());
+            LOG.info("server:[{}] term:[{}] candidate start canvassVotes", serverState.getSelfId(), serverState.getCurrentTerm());
             AtomicInteger receivedVotesCnt = new AtomicInteger(1);
             int peersLen = serverState.getPeersCount();
 
@@ -65,23 +68,22 @@ public class LeaderElection extends Daemon {
                 if (!running) {
                     return;
                 }
-                if (p.getId().getString() != serverState.getSelfId().getString()) {
-                    RequestVoteArgs args = server.createRequestVoteRequest(serverState.getCurrentTerm(), serverState.getSelfId().getString());
-                    LOG.info("server:[{}] canvassVotes RequestVoteArgs term:{} peer_id:{}", serverState.getSelfId().getString(), args.getTerm(), p.getId().getString());
+                if (p.getId().toString() != serverState.getSelfId().toString()) {
+                    RequestVoteArgs args = server.createRequestVoteRequest(serverState.getCurrentTerm(), serverState.getSelfId().toString());
+                    //LOG.info("server:[{}] canvassVotes RequestVoteArgs term:{} peer_id:{}", serverState.getSelfId(), args.getTerm(), p.getId());
                     CompletableFuture.supplyAsync(() -> server.getServrRpc().sendRequestVote(p.getId(), args), executorService)
                             .thenAccept(reply -> {
-                                LOG.info("canvassVotes server:{} get requestVote reply term:{} voted:{}", serverState.getSelfId().getString(),
+                                LOG.info("canvassVotes server:{} get requestVote reply term:{} voted:{}", serverState.getSelfId(),
                                         reply.getTerm(), reply.isVoteGranted());
-                                if (reply.isVoteGranted()) {
-                                    LOG.info("xxxx");
-                                }
+
                                 if (server.isCandidate()) {
                                     if (reply.getTerm() > serverState.getCurrentTerm()) {
                                         server.changeToFollower(reply.getTerm());
+                                        LOG.info("server:{} will change to follower in canvassVotes replyid:{} reply term:{} voted:{}", serverState.getSelfId(),
+                                                reply.getReplyId(),reply.getTerm(),reply.isVoteGranted());
                                         return;
                                     }
                                     if (reply.isVoteGranted()) {
-                                        LOG.info("vote granted ..............");
                                         if (receivedVotesCnt.get() >= peersLen / 2) {
                                             server.changeToLeader();
                                             return;
@@ -125,7 +127,7 @@ public class LeaderElection extends Daemon {
     private int submitRequest(int electionTerm){
         AtomicInteger submitted= new AtomicInteger();
         others.forEach((peer)->{
-            RequestVoteArgs args = server.createRequestVoteRequest(electionTerm, serverState.getSelfId().getString());
+            RequestVoteArgs args = server.createRequestVoteRequest(electionTerm, serverState.getSelfId().toString());
             completionService.submit(()->server.getServrRpc().sendRequestVote(peer.getId(), args));
             submitted.getAndIncrement();
         });
@@ -164,11 +166,6 @@ public class LeaderElection extends Daemon {
         }
 
         return new ResultAndTerm(Result.REJECTED,-1);
-    }
-
-
-    Collection<RaftPeer> getOtherPeers(Collection<RaftPeer> peers){
-        return peers.stream().filter((peer)->peer.getId().getString() != serverState.getSelfId().getString()).collect(Collectors.toList());
     }
 
 

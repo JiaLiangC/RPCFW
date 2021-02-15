@@ -2,11 +2,6 @@ package raft;
 
 
 import RPCFW.ServiceManager.registry.DefaultRegistry;
-import RPCFW.Transport.client.ClientProxy;
-import RPCFW.Transport.client.NettyClientProxy;
-import RPCFW.Transport.client.NettyRpcClient;
-import RPCFW.Transport.client.RpcClient;
-import RPCFW.Transport.server.NettyRpcServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import raft.common.Preconditions;
@@ -15,12 +10,11 @@ import raft.common.RaftPeer;
 import raft.common.RaftProperties;
 import raft.common.id.RaftGroupId;
 import raft.common.id.RaftPeerId;
-import raft.common.utils.NetUtils;
 import raft.requestBean.AppendEntriesArgs;
-import raft.requestBean.AppendEntriesReply;
+import raft.requestBean.Entry;
 import raft.requestBean.RequestVoteArgs;
-import raft.requestBean.RequestVoteReply;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -126,14 +120,14 @@ public class RaftServerImpl {
     }
 
     void changeToCandidate(){
-        Preconditions.assertTrue(isFollower(),"serverState is "+role.toString()+"  not follower,can't changeToCandidate");
+        Preconditions.assertTrue(isFollower(),"serverState is "+role+"  not follower,can't changeToCandidate");
         shutDonwHeartBeatMonitor();
         setRole(RaftRole.Candidate,"changeToCandidate");
         startLeaderElection();
     }
 
     void changeToLeader(){
-        LOG.info("leader election success");
+        LOG.info("server:{} leader election success at term:{}",serverState.getSelfId(),serverState.getCurrentTerm());
         Preconditions.assertTrue(isCandidate(),"not candidate");
         shutdownElectiondaemon();
         setRole(RaftRole.Leader,"changeToLeader");
@@ -173,9 +167,9 @@ public class RaftServerImpl {
 
     public AppendEntriesArgs createHeartBeatAppendEntryArgs(){
         AppendEntriesArgs args =  AppendEntriesArgs.newBuilder()
-                .setLeaderId(serverState.getLeaderId().getString())
+                .setLeaderId(serverState.getSelfId().toString())
                 .setTerm(serverState.getCurrentTerm())
-                .setEntries(null).build();
+                .setEntries(new ArrayList<Entry>()).build();
         return args;
     }
 
