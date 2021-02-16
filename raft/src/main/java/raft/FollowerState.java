@@ -36,26 +36,31 @@ public class FollowerState extends Daemon {
         this.running=false;
     }
 
-    public  void updateLastHeartBeatRpcTime(){
+     public  void updateLastHeartBeatRpcTime(){
         lastHeartBeatRpcTime =new RaftTimer();
     }
 
     @Override
     public void run() {
         updateLastHeartBeatRpcTime();
-        LOG.info("startHeartBeatMonitor  ");
+        LOG.info("server:{} startHeartBeatMonitor at term:{} ",raftServerImpl.serverState.getSelfId(),raftServerImpl.serverState.getCurrentTerm());
         while (this.running && raftServerImpl.isFollower()){
             try {
                 int electionTimeoutDur =  raftServerImpl.getRandomTimeOutMs();
                 LOG.info("{} server:{} electionTimeoutDur is {}", df.format(new Date()),raftServerImpl.getServerState().getSelfId(),electionTimeoutDur);
                 Thread.sleep(electionTimeoutDur);
-                if(!raftServerImpl.isFollower()){
-                    break;
-                }
-                if(lastHeartBeatRpcTime.getElapsedTime()>electionTimeoutDur){
-                    LOG.info("{} server:{} electionTimeout, will change to candidate", df.format(new Date()),raftServerImpl.getServerState().getSelfId());
-                    raftServerImpl.changeToCandidate();
-                    return;
+
+
+                synchronized (raftServerImpl){
+                    if(!raftServerImpl.isFollower()){
+                        break;
+                    }
+
+                    if(lastHeartBeatRpcTime.getElapsedTime()>electionTimeoutDur){
+                        LOG.info("{} server:{} electionTimeout, will change to candidate", df.format(new Date()),raftServerImpl.getServerState().getSelfId());
+                        raftServerImpl.changeToCandidate();
+                        return;
+                    }
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();

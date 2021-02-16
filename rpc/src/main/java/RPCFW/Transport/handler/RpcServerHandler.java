@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 
 
 public class RpcServerHandler extends ChannelInboundHandlerAdapter {
@@ -21,10 +22,15 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         String MethodName="null";
         try {
+            InetSocketAddress insocket = (InetSocketAddress) ctx.channel().localAddress();
+            String ip = insocket.getAddress().getHostAddress();
+            int port = insocket.getPort();
+
+
             RpcResponse rpcResponse ;
             RPCRequest rpcRequest = (RPCRequest) msg;
             logger.debug("RpcServerHandler  received messgae {}",rpcRequest);
-            Object service = new DefaultRegistry().getService(rpcRequest.getInterfaceName());
+            Object service = new DefaultRegistry().getService(port, rpcRequest.getInterfaceName());
             MethodName = rpcRequest.getMethodName();
             if (rpcRequest.getMethodName()=="AppendEntries"){
                 logger.info("xxxxx11xxx");

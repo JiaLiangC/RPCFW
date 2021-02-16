@@ -1,8 +1,5 @@
 import RPCFW.ServiceManager.registry.DefaultRegistry;
-import RPCFW.Transport.client.ClientProxy;
 import RPCFW.Transport.client.NettyClientProxy;
-import RPCFW.Transport.client.NettyRpcClient;
-import RPCFW.Transport.client.RpcClient;
 import RPCFW.Transport.server.NettyRpcServer;
 import org.junit.Test;
 import raft.RaftService;

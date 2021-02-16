@@ -1,15 +1,15 @@
 package RPCFW.RPCDemo.Netty;
 
-import RPCFW.Transport.client.ClientProxy;
+import RPCFW.Transport.client.NettyClientProxy1;
 import RPCFW.Transport.client.NettyRpcClient;
 import RPCFW.Transport.client.RpcClient;
+
+import java.net.InetSocketAddress;
 
 public class client {
 
     public static void main(String[] args) {
-        RpcClient client = new NettyRpcClient();
-        client.connect("localhost",8080);
-        EatService eatService = new ClientProxy(client).getProxy(EatService.class);
+        EatService eatService = new NettyClientProxy1(new InetSocketAddress("localhost",8080)).getProxy(EatService.class);
         String res= eatService.eat(new Menu("apple","juice sweet food"));
         System.out.println(res);
     }

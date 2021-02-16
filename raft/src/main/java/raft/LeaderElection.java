@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LeaderElection extends Daemon {
     public static final Logger LOG = LoggerFactory.getLogger(LeaderElection.class);
 
-    int REQUEST_VOTE_RPC_TIMEOUT =300;
+    int REQUEST_VOTE_RPC_TIMEOUT = 300;
 
 
     private ServerState serverState;
@@ -31,12 +31,12 @@ public class LeaderElection extends Daemon {
         this.server = server;
         this.serverState = server.getServerState();
         this.running = true;
-        this.others=serverState.getOtherPeers();
+        this.others = serverState.getOtherPeers();
         initExecutor();
     }
 
-    private void initExecutor(){
-        this.executorService = Executors.newFixedThreadPool(100);
+    private void initExecutor() {
+        this.executorService = Executors.newFixedThreadPool(20);
         this.completionService = new ExecutorCompletionService<>(executorService);
     }
 
@@ -47,6 +47,7 @@ public class LeaderElection extends Daemon {
 
     public void stopRunning() {
         this.running = false;
+        this.executorService.shutdown();
     }
 
 
@@ -54,65 +55,119 @@ public class LeaderElection extends Daemon {
     public void canvassVotes() {
         //不断选举家直到结束，此时选举超时daemon 在转变为 candidate时已经关闭，无需等待超时后再开始选举
         while (running && server.isCandidate()) {
+            synchronized (server) {
+                serverState.initEleciton();
+                LOG.info("server:[{}] term:[{}] candidate start canvassVotes", serverState.getSelfId(), serverState.getCurrentTerm());
+            }
+
+            AtomicInteger receivedVotesCnt = new AtomicInteger(1);
+            int peersLen = serverState.getPeersCount();
+                for (RaftPeer p : serverState.getOtherPeers()) {
+                    if (!running) {
+                        return;
+                    }
+
+                    RequestVoteArgs args = server.createRequestVoteRequest(serverState.getCurrentTerm(),
+                            serverState.getSelfId().toString(),   p.getId().toString());
+                    LOG.info("server:[{}] canvassVotes RequestVoteArgs term:{} peer_id:{}", serverState.getSelfId(), args.getTerm(), p.getId());
+
+                    executorService.execute(()->{
+                        try {
+
+
+                        RequestVoteReply reply = server.getServrRpc().sendRequestVote(args);
+                        if(reply.getReplyId().equals(serverState.getSelfId().toString())){
+                            //!reply.getReplyId().equals(p.getId().toString())
+                            LOG.error("reply error-------------------------");
+                        }
+                        LOG.info("server:{} canvassVotes  get requestVote reply term:{} voted:{} from {}", serverState.getSelfId(),
+                                reply.getTerm(), reply.isVoteGranted(),reply.getReplyId());
+
+                        synchronized (server){
+                            if (server.isCandidate()) {
+                                if (reply.getTerm() > serverState.getCurrentTerm()) {
+                                    server.changeToFollower(reply.getTerm());
+                                    LOG.info("server:{} will change to follower in canvassVotes replyid:{} reply term:{} voted:{}", serverState.getSelfId(),
+                                            reply.getReplyId(), reply.getTerm(), reply.isVoteGranted());
+                                    return;
+                                }
+                                if (reply.isVoteGranted()) {
+                                    if (receivedVotesCnt.get() >= peersLen / 2) {
+                                        server.changeToLeader();
+                                        return;
+                                    }
+                                    receivedVotesCnt.addAndGet(1);
+                                }
+                            }
+                        }
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    });
+
+                    /*CompletableFuture.supplyAsync(() -> server.getServrRpc().sendRequestVote(args), executorService)
+                            .thenAccept(reply -> {
+                                if(reply.getReplyId().equals(serverState.getSelfId().toString())){
+                                    //!reply.getReplyId().equals(p.getId().toString())
+                                    LOG.error("reply error-------------------------");
+                                }
+                                LOG.info("server:{} canvassVotes  get requestVote reply term:{} voted:{} from {}", serverState.getSelfId(),
+                                        reply.getTerm(), reply.isVoteGranted(),reply.getReplyId());
+
+                                synchronized (server){
+                                    if (server.isCandidate()) {
+                                        if (reply.getTerm() > serverState.getCurrentTerm()) {
+                                            server.changeToFollower(reply.getTerm());
+                                            LOG.info("server:{} will change to follower in canvassVotes replyid:{} reply term:{} voted:{}", serverState.getSelfId(),
+                                                    reply.getReplyId(), reply.getTerm(), reply.isVoteGranted());
+                                            return;
+                                        }
+                                        if (reply.isVoteGranted()) {
+                                            if (receivedVotesCnt.get() >= peersLen / 2) {
+                                                server.changeToLeader();
+                                                return;
+                                            }
+                                            receivedVotesCnt.addAndGet(1);
+                                        }
+                                    }
+                                }
+                            }).exceptionally(e->{
+                                e.printStackTrace();
+                                return null;
+                    });*/
+                }
+
+
             try {
                 Thread.sleep(server.getRandomTimeOutMs());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            serverState.initEleciton();
-            LOG.info("server:[{}] term:[{}] candidate start canvassVotes", serverState.getSelfId(), serverState.getCurrentTerm());
-            AtomicInteger receivedVotesCnt = new AtomicInteger(1);
-            int peersLen = serverState.getPeersCount();
-
-            for (RaftPeer p : serverState.getPeers()) {
-                if (!running) {
-                    return;
-                }
-                if (p.getId().toString() != serverState.getSelfId().toString()) {
-                    RequestVoteArgs args = server.createRequestVoteRequest(serverState.getCurrentTerm(), serverState.getSelfId().toString());
-                    //LOG.info("server:[{}] canvassVotes RequestVoteArgs term:{} peer_id:{}", serverState.getSelfId(), args.getTerm(), p.getId());
-                    CompletableFuture.supplyAsync(() -> server.getServrRpc().sendRequestVote(p.getId(), args), executorService)
-                            .thenAccept(reply -> {
-                                LOG.info("canvassVotes server:{} get requestVote reply term:{} voted:{}", serverState.getSelfId(),
-                                        reply.getTerm(), reply.isVoteGranted());
-
-                                if (server.isCandidate()) {
-                                    if (reply.getTerm() > serverState.getCurrentTerm()) {
-                                        server.changeToFollower(reply.getTerm());
-                                        LOG.info("server:{} will change to follower in canvassVotes replyid:{} reply term:{} voted:{}", serverState.getSelfId(),
-                                                reply.getReplyId(),reply.getTerm(),reply.isVoteGranted());
-                                        return;
-                                    }
-                                    if (reply.isVoteGranted()) {
-                                        if (receivedVotesCnt.get() >= peersLen / 2) {
-                                            server.changeToLeader();
-                                            return;
-                                        }
-                                        receivedVotesCnt.addAndGet(1);
-                                    }
-                                }
-                            });
-                }
-            }
         }
     }
 
-    enum Result{PASSED, REJECTED,TIMEOUT,NEWTERM,EXCEPTION}
-    private static class ResultAndTerm{
+
+
+
+
+    enum Result {PASSED, REJECTED, TIMEOUT, NEWTERM, EXCEPTION}
+
+    private static class ResultAndTerm {
         final Result result;
         final int term;
-        ResultAndTerm(Result r, int t){
-            result=r;
+
+        ResultAndTerm(Result r, int t) {
+            result = r;
             term = t;
         }
     }
 
-    public void canvassVotes1(){
+    public void canvassVotes1() {
         while (running && server.isCandidate()) {
             int electionTerm = serverState.initEleciton();
-            int submittedCount= submitRequest(electionTerm);
-            ResultAndTerm r = WaitForResult(submittedCount,electionTerm);
-            switch (r.result){
+            int submittedCount = submitRequest(electionTerm);
+            ResultAndTerm r = WaitForResult(submittedCount, electionTerm);
+            switch (r.result) {
                 case PASSED:
                     server.changeToLeader();
                 case NEWTERM:
@@ -124,18 +179,18 @@ public class LeaderElection extends Daemon {
         }
     }
 
-    private int submitRequest(int electionTerm){
-        AtomicInteger submitted= new AtomicInteger();
-        others.forEach((peer)->{
-            RequestVoteArgs args = server.createRequestVoteRequest(electionTerm, serverState.getSelfId().toString());
-            completionService.submit(()->server.getServrRpc().sendRequestVote(peer.getId(), args));
+    private int submitRequest(int electionTerm) {
+        AtomicInteger submitted = new AtomicInteger();
+        others.forEach((peer) -> {
+            RequestVoteArgs args = server.createRequestVoteRequest(electionTerm, serverState.getSelfId().toString(),peer.getId().toString());
+            completionService.submit(() -> server.getServrRpc().sendRequestVote(args));
             submitted.getAndIncrement();
         });
         return submitted.get();
     }
 
     //TODO add time out for requestVote time out
-    private ResultAndTerm WaitForResult(int submittedCount,int electionTerm){
+    private ResultAndTerm WaitForResult(int submittedCount, int electionTerm) {
         int receivedVotesCnt = 1;
         int waitForNum = submittedCount;
         List<RaftPeerId> votedPeers = new ArrayList<>();
@@ -143,29 +198,37 @@ public class LeaderElection extends Daemon {
         RaftTimer elapsedTime = new RaftTimer();
         //请求选举超时随机为一次选举超时
         int waitTime = server.getRandomTimeOutMs();
-        while (waitForNum>0 && running&& server.isCandidate()){
+        while (waitForNum > 0 && running && server.isCandidate()) {
             try {
-                if(elapsedTime.getElapsedTime()>waitTime){ return new ResultAndTerm(Result.TIMEOUT,-1); }
-                Future< RequestVoteReply> future = completionService.poll(REQUEST_VOTE_RPC_TIMEOUT, TimeUnit.MILLISECONDS);
+                if (elapsedTime.getElapsedTime() > waitTime) {
+                    return new ResultAndTerm(Result.TIMEOUT, -1);
+                }
+                Future<RequestVoteReply> future = completionService.poll(REQUEST_VOTE_RPC_TIMEOUT, TimeUnit.MILLISECONDS);
                 //返回请求超时
-                if(future==null){ continue; }
+                if (future == null) {
+                    continue;
+                }
 
                 RequestVoteReply reply = future.get();
-                if (reply.getTerm() > electionTerm) { return new ResultAndTerm(Result.NEWTERM,reply.getTerm()); }
+                if (reply.getTerm() > electionTerm) {
+                    return new ResultAndTerm(Result.NEWTERM, reply.getTerm());
+                }
 
                 if (reply.isVoteGranted()) {
                     votedPeers.add(RaftPeerId.valueOf(reply.getReplyId()));
                     LOG.info("vote granted ..............");
-                    if (votedPeers.size() >= serverState.getPeersCount()/ 2) { return new ResultAndTerm(Result.PASSED,reply.getTerm()); }
+                    if (votedPeers.size() >= serverState.getPeersCount() / 2) {
+                        return new ResultAndTerm(Result.PASSED, reply.getTerm());
+                    }
                 }
                 waitForNum--;
 
-            } catch (InterruptedException | ExecutionException e ) {
-                return new ResultAndTerm(Result.EXCEPTION,-1);
+            } catch (InterruptedException | ExecutionException e) {
+                return new ResultAndTerm(Result.EXCEPTION, -1);
             }
         }
 
-        return new ResultAndTerm(Result.REJECTED,-1);
+        return new ResultAndTerm(Result.REJECTED, -1);
     }
 
 

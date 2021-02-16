@@ -39,18 +39,20 @@ import java.util.concurrent.ExecutionException;
  * @author xiaoxiao
  * @date 2021/02/14
  */
-public class NettyClientProxy implements InvocationHandler,Closeable{
+//TODO channel pool and remove synchronized from connection
+public class NettyClientProxy extends ClientProxy{
     public final static Logger LOG = LoggerFactory.getLogger(NettyClientProxy.class);
 
     private final Connection connection;
     private InetSocketAddress address;
 
     public NettyClientProxy(String host, int port) throws InterruptedException {
+        LOG.info("NettyClientProxy init -------");
         this.address = NetUtils.createSocketAddrForHost(host,port);
         this.connection = new Connection(new NioEventLoopGroup());
     }
 
-    public NettyClientProxy(InetSocketAddress address) throws InterruptedException {
+    public NettyClientProxy(InetSocketAddress address) {
         this.address = address;
         this.connection = new Connection(new NioEventLoopGroup());
     }
@@ -60,12 +62,6 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
         return   this.connection.isClientChannelClosed();
     }
 
-    public void updateClientChannel(){
-
-    }
-
-
-
 
     class  Connection implements Closeable {
 
@@ -74,7 +70,7 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
         private final Map<String,CompletableFuture<RpcResponse>> replies = new ConcurrentHashMap<>();
         private  final  EventLoopGroup group;
 
-        Connection(EventLoopGroup group) throws InterruptedException {
+        Connection(EventLoopGroup group) {
             this.group =group;
             /* final ChannelInboundHandler inboundHandler =
                    new SimpleChannelInboundHandler<RpcResponse>() {
@@ -99,7 +95,7 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
             clientInit();
         }
 
-         void clientInit() {
+         synchronized void clientInit() {
             this.client = new NettyClient();
              final ChannelInboundHandler inboundHandler = new ChannelInboundHandlerAdapter(){
                 @Override
@@ -143,15 +139,17 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
         }
 
 
-        CompletableFuture<RpcResponse> poolReply(String reqId){
-            return replies.get(reqId);
+        synchronized CompletableFuture<RpcResponse> poolReply(String reqId){
+            CompletableFuture<RpcResponse> r =  replies.get(reqId);
+            replies.remove(reqId);
+            return r;
         }
 
-        ChannelFuture offer(RPCRequest rpcRequest, CompletableFuture<RpcResponse> reply){
+        synchronized ChannelFuture offer(RPCRequest rpcRequest, CompletableFuture<RpcResponse> reply){
             if(connection.isClientChannelClosed()){
                 clientInit();
             }
-            replies.putIfAbsent(rpcRequest.getUid(),reply);
+            replies.put(rpcRequest.getUid(),reply);
             return   client.writeAndFlush(rpcRequest);
         }
 
@@ -169,6 +167,7 @@ public class NettyClientProxy implements InvocationHandler,Closeable{
         }
     }
 
+    @Override
     public <T> T getProxy(Class<T> clazz) {
         //TODO 报错，原因还未解决
         //  return (T) Proxy.newProxyInstance(clazz.getClassLoader(), clazz.getInterfaces(), ClientProxy.this);

@@ -1,5 +1,6 @@
 package raft;
 
+import raft.common.RaftPeer;
 import raft.common.id.RaftPeerId;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;
@@ -7,6 +8,7 @@ import raft.requestBean.RequestVoteArgs;
 import raft.requestBean.RequestVoteReply;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Objects;
 
 
@@ -35,9 +37,9 @@ public interface RaftServerRpc {
         abstract RPC build();
     }
 
-    RequestVoteReply sendRequestVote(RaftPeerId peerId, RequestVoteArgs args);
+    RequestVoteReply sendRequestVote(RequestVoteArgs args);
 
-    AppendEntriesReply sendAppendEntries(RaftPeerId peerId, AppendEntriesArgs args);
+    AppendEntriesReply sendAppendEntries(AppendEntriesArgs args);
 
     InetSocketAddress getInetSocketAddress();
 
@@ -45,6 +47,7 @@ public interface RaftServerRpc {
 
     void start();
 
+    public void initProxyMap(Collection<RaftPeer> peers);
     public String sendRpcTest();
     public void newProxyAndSendRpcTest();
 }

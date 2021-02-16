@@ -25,7 +25,7 @@ public class LeaderState extends Daemon {
     public LeaderState(RaftServerImpl server) {
         this.server = server;
         this.serverState = server.getServerState();
-        this.executorService = Executors.newFixedThreadPool(10);
+        this.executorService = Executors.newFixedThreadPool(100);
         this.running = true;
         this.others = serverState.getOtherPeers();
     }
@@ -59,14 +59,17 @@ public class LeaderState extends Daemon {
                         return null;
                     });*/
                             executorService.submit(() -> {
-                                AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs();
+                                AppendEntriesArgs args = server.createHeartBeatAppendEntryArgs(peer.getId());
                                 try {
-                                    AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(peer.getId(), args);
+                                    LOG.info("server:{} leader sendAppendEntries to {} at term:{}",serverState.getSelfId(),peer.getId(),serverState.getCurrentTerm());
+                                    AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(args);
                                     if (!reply.isSuccess()) {
                                         LOG.info("xxxxxxxxx leader send heart beat failed");
                                         if (server.isLeader() && serverState.getCurrentTerm() < reply.getTerm()) {
                                             server.changeToFollower(reply.getTerm());
                                         }
+                                    }else {
+                                        LOG.info("server:{} leader sendAppendEntries get reply from {} at term:{}",serverState.getSelfId(),peer.getId(),serverState.getCurrentTerm());
                                     }
                                 }catch (Exception e){
                                     e.printStackTrace();

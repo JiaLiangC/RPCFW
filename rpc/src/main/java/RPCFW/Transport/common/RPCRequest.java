@@ -19,7 +19,7 @@ public class RPCRequest implements Serializable {
         this.interfaceName = interfaceName;
         this.parameters = parameters;
         this.parameterTypes = parameterTypes;
-        this.uid= UUID.randomUUID().toString();
+        this.uid= UUID.randomUUID().toString()+Thread.currentThread().getId()+System.nanoTime();
     }
 
     private RPCRequest(Builder builder){

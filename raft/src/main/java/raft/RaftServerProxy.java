@@ -35,6 +35,7 @@ public class RaftServerProxy implements RaftServer {
         //TODO 重构 raftServerRpc 中 port 解析依赖于 raftServerImpl
         this.raftServerRpc = NettyRpcService.newBuilder().setServer(this).build();
         //this.id = id!=null ? id : RaftPeerId.valueOf(getIdFrom(raftServerRpc));
+        //raftServerRpc.initProxyMap(group.getRaftPeers());
     }
 
     public String getIdFrom(RaftServerRpc serverRpc){

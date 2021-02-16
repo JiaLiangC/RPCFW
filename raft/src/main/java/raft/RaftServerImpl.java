@@ -27,6 +27,8 @@ import java.util.concurrent.*;
  */
 public class RaftServerImpl {
 
+    //TODO Followerinfo 封装follower信息
+    //TODO LOG appender for send rpc to follower
     public static final Logger LOG =LoggerFactory.getLogger(RaftServerImpl.class);
 
     public int MaxTimeOutMs = 1200;
@@ -79,7 +81,7 @@ public class RaftServerImpl {
 
     public void setRole(RaftRole newRole,String op) {
         if(newRole!=role){
-            LOG.info("change role from {} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm(),op);
+            //LOG.info("change role from {} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm(),op);
             this.role = newRole;
         }
     }
@@ -121,6 +123,7 @@ public class RaftServerImpl {
 
     void changeToCandidate(){
         Preconditions.assertTrue(isFollower(),"serverState is "+role+"  not follower,can't changeToCandidate");
+        LOG.info("server:{} change role from {} to changeToCandidate at Term {}",serverState.getSelfId(),role,serverState.getCurrentTerm());
         shutDonwHeartBeatMonitor();
         setRole(RaftRole.Candidate,"changeToCandidate");
         startLeaderElection();
@@ -152,7 +155,7 @@ public class RaftServerImpl {
     }
 
     public void resetElectionTimeOut(){
-        LOG.info("reset electionTime out");
+        LOG.info("server:{} at term {} reset electionTime out",serverState.getSelfId(),serverState.getCurrentTerm());
         heartBeatMonitor.updateLastHeartBeatRpcTime();
     }
 
@@ -161,14 +164,16 @@ public class RaftServerImpl {
     }
 
 
-    public RequestVoteArgs createRequestVoteRequest(int Term,String candidateId){
-        return RequestVoteArgs.newBuilder().setTerm(Term).setCandidateId(candidateId).build();
+    public RequestVoteArgs createRequestVoteRequest(int Term,String candidateId,String replyId){
+        return RequestVoteArgs.newBuilder().setTerm(Term).setCandidateId(candidateId).setReplyId(replyId).build();
     }
 
-    public AppendEntriesArgs createHeartBeatAppendEntryArgs(){
+    //TODO 参数修正，传入
+    public AppendEntriesArgs createHeartBeatAppendEntryArgs(RaftPeerId peerId){
         AppendEntriesArgs args =  AppendEntriesArgs.newBuilder()
                 .setLeaderId(serverState.getSelfId().toString())
                 .setTerm(serverState.getCurrentTerm())
+                .setReplyId(peerId.toString())
                 .setEntries(new ArrayList<Entry>()).build();
         return args;
     }

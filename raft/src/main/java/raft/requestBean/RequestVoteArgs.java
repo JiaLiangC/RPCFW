@@ -7,18 +7,22 @@ public class RequestVoteArgs {
     RequestVoteArgs(){
 
     }
+
     //候选人的任期号
     private int  Term;
-    //候选人 id
+    //发起请求的候选人 id
     private String CandidateId;
+    //请求对象的ID
+    private String replyId;
 
-    private RequestVoteArgs(int Term, String CandidateId){
+    private RequestVoteArgs(int Term, String CandidateId, String replyId){
         this.Term = Term;
         this.CandidateId= CandidateId;
+        this.replyId =replyId;
     }
 
     public RequestVoteArgs(Builder b){
-        this(b.Term,b.CandidateId);
+        this(b.Term,b.CandidateId,b.replyId);
     }
 
 
@@ -30,21 +34,21 @@ public class RequestVoteArgs {
         return Term;
     }
 
-    public void setTerm(int term) {
-        Term = term;
-    }
 
     public String getCandidateId() {
         return CandidateId;
     }
 
-    public void setCandidateId(String candidateId) {
-        CandidateId = candidateId;
+    public String getReplyId() {
+        return replyId;
     }
 
+
+
     public static class Builder{
-        int Term;
-        String CandidateId;
+        private  int Term;
+        private  String CandidateId;
+        private String replyId;
 
 
         public  Builder setTerm(int Term){
@@ -57,9 +61,15 @@ public class RequestVoteArgs {
             return this;
         }
 
+        public Builder setReplyId(String replyId) {
+            this.replyId = replyId;
+            return this;
+        }
+
         public  RequestVoteArgs build(){
             Objects.requireNonNull(Term);
             Objects.requireNonNull(CandidateId);
+            Objects.requireNonNull(replyId);
             return new RequestVoteArgs(this);
         }
 

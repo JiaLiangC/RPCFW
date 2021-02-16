@@ -24,18 +24,19 @@ import java.net.InetSocketAddress;
 public class NettyRpcClient implements RpcClient{
     private static final Logger logger = LoggerFactory.getLogger(NettyRpcClient.class);
     private String host;
+    private InetSocketAddress addr;
     private int port;
     private Bootstrap bootstrap;
     NioEventLoopGroup group = new NioEventLoopGroup();
+    private ChannelFuture serverChannel;
 
-    private ChannelFuture  severChannel;
-
-    public NettyRpcClient() {
+    public NettyRpcClient(InetSocketAddress address) {
     //public NettyRpcClient(String host, int port) {
         //this.host = host;
-        //this.port = port;
+        this.addr=address;
+        this.port = address.getPort();
         this.bootstrap = new Bootstrap();
-        bootstrap.group(group)
+         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
 
@@ -47,7 +48,8 @@ public class NettyRpcClient implements RpcClient{
                                 .addLast(new NettyProtocolDecoder(Constants.MAX_FRAME_LENGTH))
                                 .addLast(new RpcClientHandler());
                     }
-                });
+                });//.connect(address);
+
     }
 
     @Override
@@ -55,7 +57,7 @@ public class NettyRpcClient implements RpcClient{
 
         //TODO netty 异步操作返回的future
         try {
-            severChannel = bootstrap.connect(address).sync();
+            serverChannel = bootstrap.connect(address).sync();
             logger.info("rpc client connected to server success");
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -66,7 +68,7 @@ public class NettyRpcClient implements RpcClient{
     public void connect(String host, int port){
         //TODO netty 异步操作返回的future
         try {
-            severChannel = bootstrap.connect(host,port).sync();
+            serverChannel = bootstrap.connect().sync();
             logger.info("rpc client connected to server success");
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -78,14 +80,15 @@ public class NettyRpcClient implements RpcClient{
     @Override
     public Object sendRpcRequest(RPCRequest rpcRequest){
         try {
-            //ChannelFuture channelFuture = bootstrap.connect(host, port).sync();
-            Channel channel = severChannel.channel();
+            ChannelFuture serverChannel = bootstrap.connect(addr).sync();
+            Channel channel = serverChannel.channel();
             if(channel!=null){
                 channel.writeAndFlush(rpcRequest).addListener(future->{
                     if (future.isSuccess()){
                         logger.info("send data success");
                     }else{
-                        logger.error("send failed");
+
+                        logger.error("send failed:{} addr {}",rpcRequest.getMethodName(),port);
                     }
                 });
 
@@ -106,7 +109,7 @@ public class NettyRpcClient implements RpcClient{
 
     @Override
     public void close() {
-        severChannel.channel().close();
+        serverChannel.channel().close();
     }
 
 }
