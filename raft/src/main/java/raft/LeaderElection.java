@@ -137,7 +137,7 @@ public class LeaderElection extends Daemon {
 
 
             try {
-                int reElectionTimeOut = server.getRandomTimeOutMs();
+                int reElectionTimeOut = RaftServerImpl.getRandomTimeOutMs();
                 LOG.info("server:{}  re election timeout is {}",serverState.getSelfId(),reElectionTimeOut);
                 Thread.sleep(reElectionTimeOut);
             } catch (InterruptedException e) {
@@ -197,7 +197,7 @@ public class LeaderElection extends Daemon {
         //TODO rpc 超时和总的选举超时
         RaftTimer elapsedTime = new RaftTimer();
         //请求选举超时随机为一次选举超时
-        int waitTime = server.getRandomTimeOutMs();
+        int waitTime = RaftServerImpl.getRandomTimeOutMs();
         while (waitForNum > 0 && running && server.isCandidate()) {
             try {
                 if (elapsedTime.getElapsedTime() > waitTime) {

@@ -3,14 +3,9 @@ package raft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import raft.common.Daemon;
-import raft.common.RaftPeer;
-import raft.requestBean.AppendEntriesReply;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -46,7 +41,7 @@ public class FollowerState extends Daemon {
         LOG.info("server:{} startHeartBeatMonitor at term:{} ",raftServerImpl.serverState.getSelfId(),raftServerImpl.serverState.getCurrentTerm());
         while (this.running && raftServerImpl.isFollower()){
             try {
-                int electionTimeoutDur =  raftServerImpl.getRandomTimeOutMs();
+                int electionTimeoutDur =  RaftServerImpl.getRandomTimeOutMs();
                 //LOG.info("{} server:{} electionTimeoutDur is {}", df.format(new Date()),raftServerImpl.getServerState().getSelfId(),electionTimeoutDur);
                 Thread.sleep(electionTimeoutDur);
 

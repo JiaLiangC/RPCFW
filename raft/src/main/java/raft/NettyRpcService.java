@@ -130,5 +130,11 @@ public class NettyRpcService implements RaftServerRpc {
     }
 
 
+    //设置为true 断开连接，false 恢复连接
+    @Override
+    public void disconnectProxy(RaftPeerId peerId,boolean connect){
+        proxyPeerMap.get(peerId.toString()).disConnect(connect);
+    }
+
 
 }

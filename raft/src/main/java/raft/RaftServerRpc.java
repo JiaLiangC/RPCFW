@@ -45,6 +45,9 @@ public interface RaftServerRpc {
 
     String getRpcType();
 
+    //for internal use
+    public void disconnectProxy(RaftPeerId peerId,boolean b);
+
     void start();
 
 }

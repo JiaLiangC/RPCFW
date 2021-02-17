@@ -1,9 +1,7 @@
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import raft.BaseStateMachine;
-import raft.RaftServer;
-import raft.RaftServerProxy;
-import raft.StateMachine;
+import raft.*;
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
@@ -12,6 +10,7 @@ import raft.common.id.RaftId;
 import raft.common.id.RaftPeerId;
 import raft.common.utils.NetUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -27,7 +26,7 @@ public  class MiniRaftCluster {
     protected RaftGroup group;
     protected RaftProperties raftProperties;
 
-    protected  final Map<RaftPeerId, RaftServer> servers = new ConcurrentHashMap<>();
+    protected  final Map<RaftPeerId, RaftServerProxy> servers = new ConcurrentHashMap<>();
 
     MiniRaftCluster newCluster(int numPeers, RaftProperties prop){
         this.group = initRaftGroup(Arrays.asList(generateIds(numPeers,0)));
@@ -35,6 +34,10 @@ public  class MiniRaftCluster {
         return this;
     }
 
+    public Map<RaftPeerId, RaftServerProxy> getServers(){
+        return servers;
+
+    }
 
     public static RaftGroup initRaftGroup(Collection<String> ids){
         final RaftPeer[] peers = ids.stream()

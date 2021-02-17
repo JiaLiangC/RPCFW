@@ -77,5 +77,8 @@ public class RaftServerProxy implements RaftServer {
         return raftServerImpl.serverState.getCurrentTerm();
     }
 
+    public RaftServerImpl getServerImpl(){
+        return raftServerImpl;
+    }
 
 }

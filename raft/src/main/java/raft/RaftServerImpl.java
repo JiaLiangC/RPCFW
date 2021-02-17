@@ -32,8 +32,8 @@ public class RaftServerImpl {
     //TODO LOG appender for send rpc to follower
     public static final Logger LOG =LoggerFactory.getLogger(RaftServerImpl.class);
 
-    public int MaxTimeOutMs = 1200;
-    public int MinTimeOutMs = 600;
+    public static int MaxTimeOutMs = 1200;
+    public static int MinTimeOutMs = 600;
 
     RaftConfiguration configuration;
 
@@ -164,7 +164,7 @@ public class RaftServerImpl {
         heartBeatMonitor.updateLastHeartBeatRpcTime();
     }
 
-    int getRandomTimeOutMs(){
+    public static int getRandomTimeOutMs(){
         return MinTimeOutMs+ThreadLocalRandom.current().nextInt(MaxTimeOutMs-MinTimeOutMs+1);
     }
 

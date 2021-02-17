@@ -5,9 +5,9 @@ import org.junit.Test;
 import raft.RaftService;
 import raft.RaftServiceImpl;
 import raft.common.RaftProperties;
+import raft.common.id.RaftPeerId;
 
 public class RPCTest {
-
 
     @Test
     public void testRaftServiceRpc() throws InterruptedException {

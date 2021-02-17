@@ -106,7 +106,7 @@ public class ServerState {
         this.selfId = selfId;
     }
 
-    Collection<RaftPeer> getOtherPeers(){
+    public Collection<RaftPeer> getOtherPeers(){
         return group.getRaftPeers().stream().filter((peer)->!peer.getId().toString().equals(getSelfId().toString())).collect(Collectors.toList());
     }
 
