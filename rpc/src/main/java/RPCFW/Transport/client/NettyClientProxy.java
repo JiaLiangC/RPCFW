@@ -39,7 +39,7 @@ public class NettyClientProxy extends ClientProxy{
 
     private final Connection connection;
     private InetSocketAddress address;
-    private  Retryer retryer;
+    private volatile boolean disconnect;
 
     public NettyClientProxy(String host, int port) throws InterruptedException {
         LOG.info("NettyClientProxy init -------");
@@ -158,8 +158,19 @@ public class NettyClientProxy extends ClientProxy{
 
 
 
+    synchronized public boolean isDisconnect() {
+        return disconnect;
+    }
+
+    @Override
+    synchronized public void disConnect(boolean disconnect) {
+        this.disconnect = disconnect;
+    }
 
     public RpcResponse send(RPCRequest rpcRequest) throws ExecutionException, InterruptedException {
+        if (isDisconnect()){
+            throw new IllegalStateException(" network unhealthy,can't reach");
+        }
         int retryTims=3;
         while (retryTims>0){
             try {
