@@ -1,3 +1,5 @@
+package RPCTest;
+
 import RPCFW.ServiceManager.registry.DefaultRegistry;
 import RPCFW.Transport.client.ClientProxy;
 import RPCFW.Transport.client.NettyClientProxy;

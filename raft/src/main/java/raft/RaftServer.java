@@ -20,5 +20,7 @@ public interface RaftServer {
 
     RaftPeerId getId();
 
+    int getCurrentTerm();
+
 
 }

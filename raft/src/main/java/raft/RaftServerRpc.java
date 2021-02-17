@@ -47,8 +47,5 @@ public interface RaftServerRpc {
 
     void start();
 
-    public void initProxyMap(Collection<RaftPeer> peers);
-    public String sendRpcTest();
-    public void newProxyAndSendRpcTest();
 }
 

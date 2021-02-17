@@ -109,4 +109,5 @@ public class ServerState {
     Collection<RaftPeer> getOtherPeers(){
         return group.getRaftPeers().stream().filter((peer)->!peer.getId().toString().equals(getSelfId().toString())).collect(Collectors.toList());
     }
+
 }

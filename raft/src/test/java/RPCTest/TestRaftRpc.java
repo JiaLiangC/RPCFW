@@ -1,3 +1,5 @@
+package RPCTest;
+
 import org.junit.Test;
 import raft.common.utils.NetUtils;
 
@@ -12,7 +14,8 @@ public class TestRaftRpc {
 
 
     @Test
-    public void test() {
+    public void BasicRPCTest() {
+        //简化所有流程，单纯测试RPC 通信
         List<Peer> group = new ArrayList<>();
         List<TestRaftServiceImpl> servers = new CopyOnWriteArrayList<>();
         ExecutorService service = Executors.newFixedThreadPool(100);
@@ -42,7 +45,7 @@ public class TestRaftRpc {
             e.printStackTrace();
         }
         servers.forEach(ser->{
-            IntStream.range(0,5).forEach(i->{
+            IntStream.range(0,100).forEach(i->{
                 ser.sendRequestVoteToOthers();
             });
             try {

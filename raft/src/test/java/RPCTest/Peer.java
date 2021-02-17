@@ -1,3 +1,5 @@
+package RPCTest;
+
 import java.net.InetSocketAddress;
 
 public class Peer {

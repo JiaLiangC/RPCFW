@@ -47,7 +47,7 @@ public class FollowerState extends Daemon {
         while (this.running && raftServerImpl.isFollower()){
             try {
                 int electionTimeoutDur =  raftServerImpl.getRandomTimeOutMs();
-                LOG.info("{} server:{} electionTimeoutDur is {}", df.format(new Date()),raftServerImpl.getServerState().getSelfId(),electionTimeoutDur);
+                //LOG.info("{} server:{} electionTimeoutDur is {}", df.format(new Date()),raftServerImpl.getServerState().getSelfId(),electionTimeoutDur);
                 Thread.sleep(electionTimeoutDur);
 
 

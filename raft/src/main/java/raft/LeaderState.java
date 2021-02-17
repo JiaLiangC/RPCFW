@@ -64,12 +64,12 @@ public class LeaderState extends Daemon {
                                     LOG.info("server:{} leader sendAppendEntries to {} at term:{}",serverState.getSelfId(),peer.getId(),serverState.getCurrentTerm());
                                     AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(args);
                                     if (!reply.isSuccess()) {
-                                        LOG.info("xxxxxxxxx leader send heart beat failed");
+                                        LOG.info("leader send heart beat failed");
                                         if (server.isLeader() && serverState.getCurrentTerm() < reply.getTerm()) {
                                             server.changeToFollower(reply.getTerm());
                                         }
                                     }else {
-                                        LOG.info("server:{} leader sendAppendEntries get reply from {} at term:{}",serverState.getSelfId(),peer.getId(),serverState.getCurrentTerm());
+                                        //LOG.info("server:{} leader sendAppendEntries get reply from {} at term:{}",serverState.getSelfId(),peer.getId(),serverState.getCurrentTerm());
                                     }
                                 }catch (Exception e){
                                     e.printStackTrace();

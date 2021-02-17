@@ -2,6 +2,7 @@ package raft;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import raft.common.Preconditions;
 import raft.common.id.RaftPeerId;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;
@@ -40,7 +41,7 @@ public class RaftServiceImpl implements RaftService {
      **/
     @Override
     public AppendEntriesReply AppendEntries(AppendEntriesArgs args) {
-        LOG.info("server:{}--------------------- got AppendEntries request at term:{}",serverState.getSelfId(),serverState.getCurrentTerm());
+        LOG.info("server:{} at term:{} got AppendEntries request,leaderID:{} leaderTerm:{}",serverState.getSelfId(),serverState.getCurrentTerm(),args.getLeaderId(),args.getTerm());
         AppendEntriesReply reply = new AppendEntriesReply();
         //如果对方任期比自己小,过期心跳，就拒绝(可能是网络隔离后恢复的一台leader发来的心跳)
         synchronized (server) {
@@ -84,14 +85,12 @@ public class RaftServiceImpl implements RaftService {
      **/
     @Override
     public RequestVoteReply RequestVote(RequestVoteArgs args) {
+        Preconditions.assertTrue(args.getReplyId().equals(serverState.getSelfId().toString()),"RequestVoteArgs error");
         LOG.info("server:{} at term:{} get RequestVote req, cid:{},replyId:{}, cterm:{}", serverState.getSelfId(), serverState.getCurrentTerm(),
                 args.getCandidateId(),args.getReplyId(), args.getTerm());
+
         RequestVoteReply reply = new RequestVoteReply();
         reply.setReplyId(serverState.getSelfId().toString());
-
-        if (!args.getReplyId().equals(serverState.getSelfId().toString()) ){
-            LOG.error("RequestVote error--------------------------");
-        }
 
         synchronized (server) {
             //请求者任期小于自己的任期，拒绝投票

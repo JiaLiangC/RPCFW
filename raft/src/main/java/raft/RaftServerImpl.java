@@ -14,6 +14,7 @@ import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.Entry;
 import raft.requestBean.RequestVoteArgs;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -142,7 +143,11 @@ public class RaftServerImpl {
 
     void changeToFollower(int newTerm){
         final RaftRole old = role;
-        serverState.setCurrentTerm(newTerm);
+        if(newTerm> serverState.getCurrentTerm()){
+            serverState.setCurrentTerm(newTerm);
+            serverState.setVotedFor(null);
+        }
+
         if(old!=RaftRole.Follower){
             setRole(RaftRole.Follower,"changeToFollower");
             if(old==RaftRole.Leader){
@@ -187,7 +192,8 @@ public class RaftServerImpl {
 
     public void start(){
         DefaultRegistry registry = new DefaultRegistry();
-        registry.register(new RaftServiceImpl(this));
+        InetSocketAddress serverAddr = proxy.getServerRpc().getInetSocketAddress();
+        registry.newRegister(serverAddr, new RaftServiceImpl(this));
         startAsFollower();
     }
 

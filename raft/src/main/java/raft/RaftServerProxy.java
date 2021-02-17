@@ -27,6 +27,9 @@ public class RaftServerProxy implements RaftServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RaftServerProxy.class);
 
+
+    //TODO serverstate 线程安全重构
+
     public RaftServerProxy(RaftPeerId id, StateMachine stateMachine, RaftGroup group, RaftProperties properties){
         this.id = id;
         this.raftServerImpl = new RaftServerImpl(id, group, this, properties);
@@ -39,8 +42,7 @@ public class RaftServerProxy implements RaftServer {
     }
 
     public String getIdFrom(RaftServerRpc serverRpc){
-        InetSocketAddress address =null;
-        address  =   serverRpc.getInetSocketAddress();
+        InetSocketAddress address  =   serverRpc.getInetSocketAddress();
         return address!=null ? address.getHostName()+":"+address.getPort() : serverRpc.getRpcType() +"-"+ UUID.randomUUID();
     }
 
@@ -68,6 +70,11 @@ public class RaftServerProxy implements RaftServer {
     @Override
     public RaftPeerId getId() {
         return id;
+    }
+
+    @Override
+    public int getCurrentTerm() {
+        return raftServerImpl.serverState.getCurrentTerm();
     }
 
 

@@ -6,6 +6,7 @@ import RPCFW.Transport.client.NettyClientProxy;
 import RPCFW.Transport.server.NettyRpcServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import raft.common.Preconditions;
 import raft.common.RaftPeer;
 import raft.common.id.RaftPeerId;
 import raft.common.utils.NetUtils;
@@ -27,10 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2021/02/11
  */
 public class NettyRpcService implements RaftServerRpc {
-
     private static final Logger LOG = LoggerFactory.getLogger(NettyRpcService.class);
 
-    private NettyClientProxy proxy;
 
     public static class Builder extends  RaftServerRpc.Builder<Builder,NettyRpcService>{
         private Builder(){
@@ -55,6 +54,7 @@ public class NettyRpcService implements RaftServerRpc {
     private final RaftServer raftServer;
     private final NettyRpcServer rpcServer;
     private final Map<String, ClientProxy> proxyPeerMap=new ConcurrentHashMap<>();
+    private final InetSocketAddress selfAddress;
 
 
     private  NettyRpcService(RaftServer raftServer){
@@ -63,12 +63,11 @@ public class NettyRpcService implements RaftServerRpc {
         RaftPeerId id = raftServer.getId();
         RaftPeer peer = raftServer.getPeer(id);
         InetSocketAddress socketAddress = NetUtils.createSocketAddr( peer.getAddress(),-1);
+        selfAddress =socketAddress;
         int port = socketAddress.getPort();
         this.rpcServer = new NettyRpcServer(port);
-        // proxy = new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(raftServer.getId()).getAddress(),-1));
     }
 
-    @Override
     public void initProxyMap(Collection<RaftPeer> peers){
         peers.forEach(peer -> {
             if (!peer.getId().toString().equals(raftServer.getId().toString())){
@@ -80,7 +79,6 @@ public class NettyRpcService implements RaftServerRpc {
         });
     }
 
-    @Override
     public void newProxyAndSendRpcTest(){
             NettyClientProxy p = new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(raftServer.getId()).getAddress(),-1));
             RaftService raftService = p.getProxy(RaftService.class);
@@ -91,38 +89,20 @@ public class NettyRpcService implements RaftServerRpc {
 
     @Override
     public RequestVoteReply sendRequestVote(RequestVoteArgs args){
-
-        if(!args.getCandidateId().equals(raftServer.getId().toString()) ){
-            LOG.info("sendRequestVote error -----------------");
-        }
-
-        if(args.getReplyId().equals(raftServer.getId().toString())){
-            LOG.info("sendRequestVote error -----------------");
-        }
+        Preconditions.assertTrue(args.getCandidateId().equals(raftServer.getId().toString()),"RequestVoteArgs error");
+        Preconditions.assertTrue(!args.getReplyId().equals(raftServer.getId().toString()),"RequestVoteArgs error");
 
         RaftService raftService = getProxy(RaftPeerId.valueOf(args.getReplyId())).getProxy(RaftService.class);
-
         RequestVoteReply res = raftService.RequestVote(args);
-        if(!res.getReplyId().equals(args.getReplyId())){
-            LOG.info("sendRequestVote error -----------------");
-        }
-        LOG.info("sendRequestVote got replyTerm:{} repltVoted:{} ",res.getTerm(),res.isVoteGranted());
+
+        Preconditions.assertTrue(res.getReplyId().equals(args.getReplyId()),"reply id error");
         return res;
     }
 
     @Override
     public AppendEntriesReply sendAppendEntries(AppendEntriesArgs args){
-        //
-            LOG.info("xxxxx");
         RaftService raftService = getProxy(RaftPeerId.valueOf(args.getReplyId())).getProxy(RaftService.class);
         AppendEntriesReply res = raftService.AppendEntries(args);
-        return res;
-    }
-
-    @Override
-    public String sendRpcTest(){
-        RaftService raftService = proxy.getProxy(RaftService.class);
-        String res = raftService.rpcTest();
         return res;
     }
 
@@ -135,8 +115,7 @@ public class NettyRpcService implements RaftServerRpc {
 
     @Override
     public InetSocketAddress getInetSocketAddress() {
-        //TODO
-        return null;
+        return selfAddress;
     }
 
     @Override
@@ -145,14 +124,11 @@ public class NettyRpcService implements RaftServerRpc {
     }
 
     public ClientProxy getProxy(RaftPeerId peerId){
-        if(peerId.toString().equals(raftServer.getId().toString())|| proxyPeerMap.size()==3){
-            LOG.info("xxxxxxxx");
-        }
-        //return proxyPeerMap.computeIfAbsent(peerId.toString(),
-         //       pid-> new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(peerId).getAddress(),-1)));
+        Preconditions.assertTrue(!peerId.toString().equals(raftServer.getId().toString()),"getProxy error");
         return  proxyPeerMap.computeIfAbsent(peerId.toString(),
-                pid-> new NettyClientProxy1(NetUtils.createSocketAddr(raftServer.getPeer(peerId).getAddress(),-1)));
+                pid-> new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(peerId).getAddress(),-1)));
     }
+
 
 
 }

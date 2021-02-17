@@ -3,6 +3,7 @@ package raft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import raft.common.Daemon;
+import raft.common.Preconditions;
 import raft.common.RaftPeer;
 import raft.common.id.RaftPeerId;
 import raft.requestBean.RequestVoteArgs;
@@ -71,7 +72,7 @@ public class LeaderElection extends Daemon {
                             serverState.getSelfId().toString(),   p.getId().toString());
                     LOG.info("server:[{}] canvassVotes RequestVoteArgs term:{} peer_id:{}", serverState.getSelfId(), args.getTerm(), p.getId());
 
-                    executorService.execute(()->{
+                  /*  executorService.execute(()->{
                         try {
 
 
@@ -103,17 +104,14 @@ public class LeaderElection extends Daemon {
                         }catch (Exception e){
                             e.printStackTrace();
                         }
-                    });
+                    });*/
 
-                    /*CompletableFuture.supplyAsync(() -> server.getServrRpc().sendRequestVote(args), executorService)
+                    CompletableFuture.supplyAsync(() -> server.getServrRpc().sendRequestVote(args), executorService)
                             .thenAccept(reply -> {
-                                if(reply.getReplyId().equals(serverState.getSelfId().toString())){
-                                    //!reply.getReplyId().equals(p.getId().toString())
-                                    LOG.error("reply error-------------------------");
-                                }
+
                                 LOG.info("server:{} canvassVotes  get requestVote reply term:{} voted:{} from {}", serverState.getSelfId(),
                                         reply.getTerm(), reply.isVoteGranted(),reply.getReplyId());
-
+                                Preconditions.assertTrue(!reply.getReplyId().equals(serverState.getSelfId().toString()),"reply error");
                                 synchronized (server){
                                     if (server.isCandidate()) {
                                         if (reply.getTerm() > serverState.getCurrentTerm()) {
@@ -134,12 +132,14 @@ public class LeaderElection extends Daemon {
                             }).exceptionally(e->{
                                 e.printStackTrace();
                                 return null;
-                    });*/
+                    });
                 }
 
 
             try {
-                Thread.sleep(server.getRandomTimeOutMs());
+                int reElectionTimeOut = server.getRandomTimeOutMs();
+                LOG.info("server:{}  re election timeout is {}",serverState.getSelfId(),reElectionTimeOut);
+                Thread.sleep(reElectionTimeOut);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

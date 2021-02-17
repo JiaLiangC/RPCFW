@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 
 /**
@@ -56,13 +54,6 @@ public class NettyClientProxy extends ClientProxy{
     public NettyClientProxy(InetSocketAddress address) {
         this.address = address;
         this.connection = new Connection(new NioEventLoopGroup());
-    }
-
-
-
-
-    public boolean isClientChannelClosed(){
-        return   this.connection.isClientChannelClosed();
     }
 
 
