@@ -6,31 +6,31 @@ import RPCFW.Transport.common.Constants;
 import RPCFW.Transport.common.RPCRequest;
 import RPCFW.Transport.common.RpcResponse;
 import RPCFW.utils.NetUtils;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-
-
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 
 /**
@@ -45,6 +45,7 @@ public class NettyClientProxy extends ClientProxy{
 
     private final Connection connection;
     private InetSocketAddress address;
+    private  Retryer retryer;
 
     public NettyClientProxy(String host, int port) throws InterruptedException {
         LOG.info("NettyClientProxy init -------");
@@ -56,6 +57,8 @@ public class NettyClientProxy extends ClientProxy{
         this.address = address;
         this.connection = new Connection(new NioEventLoopGroup());
     }
+
+
 
 
     public boolean isClientChannelClosed(){
@@ -72,26 +75,6 @@ public class NettyClientProxy extends ClientProxy{
 
         Connection(EventLoopGroup group) {
             this.group =group;
-            /* final ChannelInboundHandler inboundHandler =
-                   new SimpleChannelInboundHandler<RpcResponse>() {
-                        @Override
-                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                            LOG.error("异常信息：{}",cause.getMessage());
-                            cause.printStackTrace();
-                            super.exceptionCaught(ctx, cause);
-                        }
-
-                        @Override
-                        protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse rpcResponse) throws Exception {
-                            CompletableFuture<RpcResponse> future = poolReply();
-                            if(future==null){
-                                //TODO add rpc id for debug
-                                throw  new IllegalStateException("Request not found");
-                            }
-                            future.complete(rpcResponse);
-                        }
-                    };*/
-
             clientInit();
         }
 
@@ -108,9 +91,9 @@ public class NettyClientProxy extends ClientProxy{
                         //throw  new IllegalStateException("Request not found");
                     }
                     future.complete(rpcResponse);
-                    ctx.channel().close().sync();
+                    //don't closed the channel
+                    //ctx.channel().close().sync();
                     ReferenceCountUtil.release(msg);
-                    //super.channelRead(ctx, msg);
                 }
 
                 @Override
@@ -146,9 +129,9 @@ public class NettyClientProxy extends ClientProxy{
         }
 
         synchronized ChannelFuture offer(RPCRequest rpcRequest, CompletableFuture<RpcResponse> reply){
-            if(connection.isClientChannelClosed()){
+           /* if(connection.isClientChannelClosed()){
                 clientInit();
-            }
+            }*/
             replies.put(rpcRequest.getUid(),reply);
             return   client.writeAndFlush(rpcRequest);
         }
@@ -176,43 +159,38 @@ public class NettyClientProxy extends ClientProxy{
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        try {
-            RPCRequest rpcRequest = new RPCRequest.Builder().setInterfaceName(method.getDeclaringClass().getName())
-                    .setMethodName(method.getName())
-                    .setParameters(args)
-                    .setParameterTypes(method.getParameterTypes())
-                    .build();
-            //Object result = client.sendRpcRequest(rpcRequest);
-            RpcResponse result = send(rpcRequest);
-            return result.getData();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-        return null;
-        //return result.getData();
+        RPCRequest rpcRequest = new RPCRequest.Builder().setInterfaceName(method.getDeclaringClass().getName())
+                .setMethodName(method.getName())
+                .setParameters(args)
+                .setParameterTypes(method.getParameterTypes())
+                .build();
+        //Object result = client.sendRpcRequest(rpcRequest);
+        RpcResponse result = send(rpcRequest);
+        return result.getData();
     }
 
 
-    public RpcResponse send(RPCRequest rpcRequest) throws IOException {
-        CompletableFuture<RpcResponse> reply = new CompletableFuture();
-        ChannelFuture channelFuture = connection.offer(rpcRequest,reply);
 
-        try {
-            //TODO 阻塞
-            channelFuture.sync();
-            return reply.get();
-        } catch (InterruptedException e) {
-            if(isClientChannelClosed()){
-                LOG.error("..................................");
-                //connection.updateClient();
 
+    public RpcResponse send(RPCRequest rpcRequest) throws ExecutionException, InterruptedException {
+        int retryTims=3;
+        while (retryTims>0){
+            try {
+                CompletableFuture<RpcResponse> reply = new CompletableFuture();
+                ChannelFuture channelFuture = connection.offer(rpcRequest,reply);
+                //TODO 阻塞
+                channelFuture.sync();
+                return reply.get();
+            }catch (Exception e){
+                if (e instanceof ClosedChannelException){
+                    connection.clientInit();
+                    LOG.error("ClosedChannelException reinitialize client");
+                }else {
+                    throw e;
+                }
             }
-            e.printStackTrace();
-            //throw new IOException("send request Interrupted");
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            //throw  new IOException("execute failed");
+            Thread.sleep(100);
+            retryTims--;
         }
         return null;
     }

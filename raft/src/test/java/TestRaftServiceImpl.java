@@ -1,6 +1,6 @@
 import RPCFW.ServiceManager.registry.DefaultRegistry;
 import RPCFW.Transport.client.ClientProxy;
-import RPCFW.Transport.client.NettyClientProxy1;
+import RPCFW.Transport.client.NettyClientProxy;
 import RPCFW.Transport.server.NettyRpcServer;
 import raft.RaftService;
 import raft.common.Preconditions;
@@ -79,10 +79,8 @@ public class TestRaftServiceImpl implements RaftService  {
 
     synchronized public ClientProxy getProxy(String targetid){
         Preconditions.assertTrue(!this.id.equals(targetid),"error in getProxy");
-        //return proxyPeerMap.computeIfAbsent(peerId.toString(),
-        //       pid-> new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(peerId).getAddress(),-1)));
         return  proxyPeerMap.computeIfAbsent(targetid,
-                pt-> new NettyClientProxy1(getInetAddr(targetid)));
+                pt-> new NettyClientProxy(getInetAddr(targetid)));
     }
 
     public int getPort(String id){

@@ -36,7 +36,8 @@ public class NettyRpcServer implements RpcServer {
                 //设置channel 类型
                 .channel(NioServerSocketChannel.class)
                 //设置线程队列得到连接个数
-                .option(ChannelOption.SO_BACKLOG, 128)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,4000)
+                .option(ChannelOption.SO_BACKLOG, 1280)
                 //设置保持活动连接状态
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 .handler(new LoggingHandler(LogLevel.DEBUG))

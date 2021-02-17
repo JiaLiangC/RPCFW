@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 public class TestRaftRpc {
 
@@ -36,12 +37,19 @@ public class TestRaftRpc {
         });
 
         try {
-            Thread.sleep(3000);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         servers.forEach(ser->{
-            ser.sendRequestVoteToOthers();
+            IntStream.range(0,5).forEach(i->{
+                ser.sendRequestVoteToOthers();
+            });
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
 
 

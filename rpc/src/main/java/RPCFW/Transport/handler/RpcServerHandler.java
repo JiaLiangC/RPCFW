@@ -45,8 +45,9 @@ public class RpcServerHandler extends ChannelInboundHandlerAdapter {
             Object res = method.invoke(service,rpcRequest.getParameters());
             rpcResponse = RpcResponse.success(res,rpcRequest.getUid());
             ChannelFuture channelFuture = ctx.writeAndFlush(rpcResponse);
+            //don't closed the channel
             //异步回调结束后自动关闭channel
-            channelFuture.addListener(ChannelFutureListener.CLOSE);
+            //channelFuture.addListener(ChannelFutureListener.CLOSE);
         }catch (Exception e){
             logger.error("error: MethodName{} ", MethodName);
             e.printStackTrace();

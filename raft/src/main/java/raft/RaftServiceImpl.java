@@ -9,6 +9,7 @@ import raft.requestBean.RequestVoteArgs;
 import raft.requestBean.RequestVoteReply;
 
 
+//TODO  注册中心改本地或者ZK
 /**
  * Raft 对外提供RPC 服务的接口实现类
  *

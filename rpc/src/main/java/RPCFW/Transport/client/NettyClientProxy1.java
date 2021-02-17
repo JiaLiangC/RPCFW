@@ -40,7 +40,7 @@ public class NettyClientProxy1 extends  ClientProxy {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
     }
 }

@@ -6,6 +6,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
@@ -17,7 +18,7 @@ import java.net.InetSocketAddress;
 public class NettyClient implements RpcClient{
 
     private final static Logger LOG = LoggerFactory.getLogger(NettyClient.class);
-    private Channel channel;
+    private  Channel channel;
     private  InetSocketAddress  address;
 
     void connect(InetSocketAddress socketAddress, EventLoopGroup group, ChannelInitializer initializer) throws InterruptedException {
@@ -32,9 +33,6 @@ public class NettyClient implements RpcClient{
     }
 
     ChannelFuture writeAndFlush(Object msg){
-        if(!channel.isOpen()){
-            LOG.error("----------------------Channe closed ");
-        }
         return channel.writeAndFlush(msg);
     }
 
