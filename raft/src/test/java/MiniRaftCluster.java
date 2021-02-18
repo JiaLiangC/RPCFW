@@ -28,6 +28,8 @@ public  class MiniRaftCluster {
 
     protected  final Map<RaftPeerId, RaftServerProxy> servers = new ConcurrentHashMap<>();
 
+    private final Map<RaftPeerId, RaftServerProxy> disConnectedServers = new ConcurrentHashMap<>();
+
     MiniRaftCluster newCluster(int numPeers, RaftProperties prop){
         this.group = initRaftGroup(Arrays.asList(generateIds(numPeers,0)));
         this.raftProperties = new RaftProperties();
@@ -38,6 +40,23 @@ public  class MiniRaftCluster {
         return servers;
 
     }
+
+    public boolean isConnected(RaftPeerId id){
+        return !disConnectedServers.containsKey(id);
+    }
+
+    public Map<RaftPeerId, RaftServerProxy> disconnectedServers(){
+        return disConnectedServers;
+    }
+
+    public void   addDisconnectedServer(RaftPeerId id){
+         disConnectedServers.computeIfAbsent(id,(key)->servers.get(key));
+    }
+
+    public void  removeDisconnectedServer(RaftPeerId id){
+        disConnectedServers.remove(id);
+    }
+
 
     public static RaftGroup initRaftGroup(Collection<String> ids){
         final RaftPeer[] peers = ids.stream()

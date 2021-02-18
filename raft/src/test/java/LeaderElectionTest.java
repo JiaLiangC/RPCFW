@@ -40,33 +40,48 @@ public class LeaderElectionTest {
     @Test
     public void TestReElection() throws InterruptedException {
         MiniRaftCluster cluster = new MiniRaftCluster().newCluster(3,new RaftProperties());
-        cluster.start();
+        CompletableFuture.runAsync(()-> {
+            try {
+                cluster.start();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
         LOG.info("election after netWork failure");
 
         RaftServerImpl leader1 = RaftTestUtils.checkOneLeader(cluster);
         RaftPeerId leader1Id =  leader1.getServerState().getSelfId();
 
+
+        LOG.info("disconnects leader, new one should be elected");
         // if the leader disconnects, a new one should be elected.
         RaftTestUtils.disconnect(cluster,leader1Id);
 
         RaftTestUtils.checkOneLeader(cluster);
 
+        LOG.info("old leader rejoins, that shouldn't disturb the new leader");
         // if the old leader rejoins, that shouldn't
         // disturb the new leader.
         RaftTestUtils.reconnect(cluster,leader1Id);
         RaftServerImpl leader2 = RaftTestUtils.checkOneLeader(cluster);
         RaftPeerId leader2Id =leader2.getServerState().getSelfId();
 
-        // if there's no quorum, no leader should
-        // be elected.
+
+        LOG.info("if there's no quorum, no leader should be elected");
+        // if there's no quorum, no leader should be elected.
         RaftTestUtils.disconnect(cluster, leader2Id);
         RaftTestUtils.disconnect(cluster, leader1Id);
+
+        // 判断网络正常的节点没有选出  leader
         RaftTestUtils.checkNoLeader(cluster);
 
+
+        LOG.info("if a quorum arises, it should elect a leader.");
         // if a quorum arises, it should elect a leader.
         RaftTestUtils.reconnect(cluster,leader1Id);
         RaftTestUtils.checkOneLeader(cluster);
 
+        LOG.info("re-join of last node shouldn't prevent leader from existing.");
         // re-join of last node shouldn't prevent leader from existing.
         RaftTestUtils.reconnect(cluster,leader2Id);
         RaftTestUtils.checkOneLeader(cluster);

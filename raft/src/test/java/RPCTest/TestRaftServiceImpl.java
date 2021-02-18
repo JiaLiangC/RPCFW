@@ -17,26 +17,33 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class TestRaftServiceImpl implements RaftService  {
+public class TestRaftServiceImpl implements RaftService {
 
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     private String id;
     private int port;
     private NettyRpcServer rpcServer;
     private Collection<Peer> group;
-    private Map<String,Peer> peerMap = new ConcurrentHashMap<>();
-    private final Map<String, ClientProxy> proxyPeerMap=new ConcurrentHashMap<>();
+    private Map<String, Peer> peerMap = new ConcurrentHashMap<>();
+    private final Map<String, ClientProxy> proxyPeerMap = new ConcurrentHashMap<>();
 
 
-    TestRaftServiceImpl(Peer peer, Collection<Peer> g){
-        this.id=peer.getId();
-        port= peer.getAddress().getPort();
+    TestRaftServiceImpl(Peer peer, Collection<Peer> g) {
+        this.id = peer.getId();
+        port = peer.getAddress().getPort();
         rpcServer = new NettyRpcServer(port);
-        DefaultRegistry  registry = new DefaultRegistry();
-        registry.newRegister(peer.getAddress(),this);
-        group=g;
-        g.stream().forEach(p->peerMap.put(p.getId(),p));
+        DefaultRegistry registry = new DefaultRegistry();
+        registry.newRegister(peer.getAddress(), this);
+        group = g;
+        g.stream().forEach(p -> peerMap.put(p.getId(), p));
     }
 
     @Override
@@ -45,8 +52,8 @@ public class TestRaftServiceImpl implements RaftService  {
     }
 
     @Override
-     public RequestVoteReply RequestVote(RequestVoteArgs args) {
-        Preconditions.assertTrue(args.getReplyId().equals(this.id),"RequestVote error");
+    public RequestVoteReply RequestVote(RequestVoteArgs args) {
+        Preconditions.assertTrue(args.getReplyId().equals(this.id), "RequestVote error");
         RequestVoteReply reply = new RequestVoteReply();
         reply.setReplyId(this.id);
         reply.setVoteGranted(true);
@@ -60,37 +67,54 @@ public class TestRaftServiceImpl implements RaftService  {
         return null;
     }
 
-    public void start(){
+    public void start() {
         rpcServer.start();
     }
 
-    synchronized public void sendRequestVoteToOthers(){
-        getOtherPeers().forEach(p->{
+    synchronized public void sendRequestVoteToOthers() {
+        getOtherPeers().forEach(p -> {
             String pid = p.getId();
-            ClientProxy proxy =  getProxy(p.getId());
+            ClientProxy proxy = getProxy(p.getId());
             RaftService service = proxy.getProxy(RaftService.class);
 
             RequestVoteArgs req = RequestVoteArgs.newBuilder().setReplyId(pid).setCandidateId(this.id).setTerm(1).build();
-            service.RequestVote(req);
+            try {
+                service.RequestVote(req);
+            }catch (Exception e){
+            }
+
         });
     }
 
-    synchronized Collection<Peer> getOtherPeers(){
-        return group.stream().filter((p)->!(p.getId().equals(this.id))).collect(Collectors.toList());
+    synchronized Collection<Peer> getOtherPeers() {
+        return group.stream().filter((p) -> !(p.getId().equals(this.id))).collect(Collectors.toList());
     }
 
-    synchronized public ClientProxy getProxy(String targetid){
-        Preconditions.assertTrue(!this.id.equals(targetid),"error in getProxy");
-        return  proxyPeerMap.computeIfAbsent(targetid,
-                pt-> new NettyClientProxy(getInetAddr(targetid)));
+    public void initProxy(){
+        getOtherPeers().forEach(peer -> {
+            proxyPeerMap.putIfAbsent(peer.getId(), new NettyClientProxy(getInetAddr(peer.getId())));
+        });
+
+    }
+    synchronized public ClientProxy getProxy(String targetid) {
+        Preconditions.assertTrue(!this.id.equals(targetid), "error in getProxy");
+        return proxyPeerMap.computeIfAbsent(targetid,
+                pt -> new NettyClientProxy(getInetAddr(targetid)));
     }
 
-    public int getPort(String id){
+    public int getPort(String id) {
         return peerMap.get(id).getAddress().getPort();
     }
 
-    synchronized public InetSocketAddress getInetAddr(String id){
+    synchronized public InetSocketAddress getInetAddr(String id) {
         return peerMap.get(id).getAddress();
+    }
+
+    public void disconncect(boolean b) {
+        initProxy();
+        proxyPeerMap.forEach((k, proxy) -> {
+            proxy.disConnect(b);
+        });
     }
 
 }

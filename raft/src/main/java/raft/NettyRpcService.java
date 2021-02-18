@@ -93,17 +93,26 @@ public class NettyRpcService implements RaftServerRpc {
         Preconditions.assertTrue(!args.getReplyId().equals(raftServer.getId().toString()),"RequestVoteArgs error");
 
         RaftService raftService = getProxy(RaftPeerId.valueOf(args.getReplyId())).getProxy(RaftService.class);
-        RequestVoteReply res = raftService.RequestVote(args);
-
-        Preconditions.assertTrue(res.getReplyId().equals(args.getReplyId()),"reply id error");
-        return res;
+        try {
+            RequestVoteReply res = raftService.RequestVote(args);
+            Preconditions.assertTrue(res.getReplyId().equals(args.getReplyId()),"reply id error");
+            return res;
+        }catch (Exception e){
+            LOG.error("sendRequestVote failed");
+        }
+        return null;
     }
 
     @Override
     public AppendEntriesReply sendAppendEntries(AppendEntriesArgs args){
         RaftService raftService = getProxy(RaftPeerId.valueOf(args.getReplyId())).getProxy(RaftService.class);
-        AppendEntriesReply res = raftService.AppendEntries(args);
-        return res;
+        try{
+            AppendEntriesReply res = raftService.AppendEntries(args);
+            return res;
+        } catch (Exception e){
+            LOG.error("sendAppendEntries failed");
+        }
+        return null;
     }
 
 
@@ -133,6 +142,8 @@ public class NettyRpcService implements RaftServerRpc {
     //设置为true 断开连接，false 恢复连接
     @Override
     public void disconnectProxy(RaftPeerId peerId,boolean connect){
+        proxyPeerMap.computeIfAbsent(peerId.toString(),
+                pid-> new NettyClientProxy(NetUtils.createSocketAddr(raftServer.getPeer(peerId).getAddress(),-1)));
         proxyPeerMap.get(peerId.toString()).disConnect(connect);
     }
 

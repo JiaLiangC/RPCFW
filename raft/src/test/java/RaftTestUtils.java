@@ -21,10 +21,12 @@ public class RaftTestUtils {
 
 
     public static void  disconnect(MiniRaftCluster cluster, RaftPeerId peerId){
+        cluster.addDisconnectedServer(peerId);
         disConnectNetwork( cluster,  peerId,true);
     }
 
     public static void  reconnect(MiniRaftCluster cluster, RaftPeerId peerId){
+        cluster.removeDisconnectedServer(peerId);
         disConnectNetwork( cluster,  peerId,false);
     }
 
@@ -43,11 +45,15 @@ public class RaftTestUtils {
 
     }
 
+
+    //判断网络正常的节点 no leader
     public static void checkNoLeader(MiniRaftCluster cluster){
         cluster.getServers().values().forEach(server->{
             RaftServerImpl impl = server.getServerImpl();
-            if (impl.isLeader()){
-                Assert.fail("expetced no leader but there is a leader, leaderId:"+impl.getServerState().getSelfId()+" term:"+impl.getServerState().getCurrentTerm());
+            if(cluster.isConnected(server.getId())){
+                if (impl.isLeader()){
+                    Assert.fail("expetced no leader but there is a leader, leaderId:"+impl.getServerState().getSelfId()+" term:"+impl.getServerState().getCurrentTerm());
+                }
             }
         });
     }

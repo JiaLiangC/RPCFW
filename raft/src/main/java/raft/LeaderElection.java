@@ -72,43 +72,12 @@ public class LeaderElection extends Daemon {
                             serverState.getSelfId().toString(),   p.getId().toString());
                     LOG.info("server:[{}] canvassVotes RequestVoteArgs term:{} peer_id:{}", serverState.getSelfId(), args.getTerm(), p.getId());
 
-                  /*  executorService.execute(()->{
-                        try {
-
-
-                        RequestVoteReply reply = server.getServrRpc().sendRequestVote(args);
-                        if(reply.getReplyId().equals(serverState.getSelfId().toString())){
-                            //!reply.getReplyId().equals(p.getId().toString())
-                            LOG.error("reply error-------------------------");
-                        }
-                        LOG.info("server:{} canvassVotes  get requestVote reply term:{} voted:{} from {}", serverState.getSelfId(),
-                                reply.getTerm(), reply.isVoteGranted(),reply.getReplyId());
-
-                        synchronized (server){
-                            if (server.isCandidate()) {
-                                if (reply.getTerm() > serverState.getCurrentTerm()) {
-                                    server.changeToFollower(reply.getTerm());
-                                    LOG.info("server:{} will change to follower in canvassVotes replyid:{} reply term:{} voted:{}", serverState.getSelfId(),
-                                            reply.getReplyId(), reply.getTerm(), reply.isVoteGranted());
-                                    return;
-                                }
-                                if (reply.isVoteGranted()) {
-                                    if (receivedVotesCnt.get() >= peersLen / 2) {
-                                        server.changeToLeader();
-                                        return;
-                                    }
-                                    receivedVotesCnt.addAndGet(1);
-                                }
-                            }
-                        }
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                    });*/
-
                     CompletableFuture.supplyAsync(() -> server.getServrRpc().sendRequestVote(args), executorService)
                             .thenAccept(reply -> {
-
+                                    if(reply==null){
+                                        LOG.info("server:[{}] canvassVotes sendRequestVote failed  at term:{}, target peer_id:{}", serverState.getSelfId(), args.getTerm(), p.getId());
+                                        return;
+                                    }
                                 LOG.info("server:{} canvassVotes  get requestVote reply term:{} voted:{} from {}", serverState.getSelfId(),
                                         reply.getTerm(), reply.isVoteGranted(),reply.getReplyId());
                                 Preconditions.assertTrue(!reply.getReplyId().equals(serverState.getSelfId().toString()),"reply error");

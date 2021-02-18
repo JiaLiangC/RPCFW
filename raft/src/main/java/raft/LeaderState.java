@@ -63,6 +63,9 @@ public class LeaderState extends Daemon {
                                 try {
                                     LOG.info("server:{} leader sendAppendEntries to {} at term:{}",serverState.getSelfId(),peer.getId(),serverState.getCurrentTerm());
                                     AppendEntriesReply reply = server.getServrRpc().sendAppendEntries(args);
+                                    if (reply== null ){
+                                        return;
+                                    }
                                     if (!reply.isSuccess()) {
                                         LOG.info("leader send heart beat failed");
                                         if (server.isLeader() && serverState.getCurrentTerm() < reply.getTerm()) {
