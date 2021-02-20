@@ -2,10 +2,9 @@ import RPCFW.ServiceManager.registry.DefaultRegistry;
 import RPCFW.Transport.client.NettyClientProxy;
 import RPCFW.Transport.server.NettyRpcServer;
 import org.junit.Test;
-import raft.RaftService;
-import raft.RaftServiceImpl;
+import raft.server.RaftService;
+import raft.server.RaftServiceImpl;
 import raft.common.RaftProperties;
-import raft.common.id.RaftPeerId;
 
 public class RPCTest {
 

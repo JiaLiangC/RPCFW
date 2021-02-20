@@ -2,7 +2,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import raft.RaftServerImpl;
+import raft.server.RaftServerImpl;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
 import java.util.concurrent.CompletableFuture;

@@ -1,4 +1,4 @@
-package raft;
+package raft.server;
 
 import raft.common.RaftPeer;
 import raft.common.id.RaftPeerId;

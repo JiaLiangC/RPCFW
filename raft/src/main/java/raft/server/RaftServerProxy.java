@@ -1,11 +1,14 @@
-package raft;
+package raft.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import raft.rpc.NettyRpcService;
+import raft.rpc.RaftServerRpc;
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
+import raft.statemachine.StateMachine;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;

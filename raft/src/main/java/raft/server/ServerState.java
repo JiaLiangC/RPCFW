@@ -1,9 +1,11 @@
-package raft;
+package raft.server;
 
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
+import raft.server.RaftServerImpl;
+import raft.statemachine.StateMachine;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -11,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 //为啥引入其他地方static的log包
-import static raft.RaftServerImpl.LOG;
+import static raft.server.RaftServerImpl.LOG;
 /**
  * raft 服务状态
  *
@@ -31,7 +33,7 @@ public class ServerState {
     private RaftGroup group;
 
 
-    public  ServerState(RaftPeerId peerId, RaftGroup group, RaftProperties properties,RaftServerImpl server,StateMachine stateMachine){
+    public  ServerState(RaftPeerId peerId, RaftGroup group, RaftProperties properties, RaftServerImpl server, StateMachine stateMachine){
         this.selfId=peerId;
         this.server=server;
         this.leaderId=null;

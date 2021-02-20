@@ -1,7 +1,6 @@
-package raft;
+package raft.rpc;
 
 import RPCFW.Transport.client.ClientProxy;
-import RPCFW.Transport.client.NettyClientProxy1;
 import RPCFW.Transport.client.NettyClientProxy;
 import RPCFW.Transport.server.NettyRpcServer;
 import org.slf4j.Logger;
@@ -14,6 +13,8 @@ import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;
 import raft.requestBean.RequestVoteArgs;
 import raft.requestBean.RequestVoteReply;
+import raft.server.RaftServer;
+import raft.server.RaftService;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -41,7 +42,7 @@ public class NettyRpcService implements RaftServerRpc {
         }
 
         @Override
-        NettyRpcService build() {
+        public NettyRpcService build() {
             return new NettyRpcService(getServer());
         }
     }

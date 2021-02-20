@@ -4,7 +4,7 @@ import RPCFW.ServiceManager.registry.DefaultRegistry;
 import RPCFW.Transport.client.ClientProxy;
 import RPCFW.Transport.client.NettyClientProxy;
 import RPCFW.Transport.server.NettyRpcServer;
-import raft.RaftService;
+import raft.server.RaftService;
 import raft.common.Preconditions;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;

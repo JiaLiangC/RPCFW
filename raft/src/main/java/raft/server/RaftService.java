@@ -1,4 +1,4 @@
-package raft;
+package raft.server;
 
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;

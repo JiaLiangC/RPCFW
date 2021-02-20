@@ -1,16 +1,15 @@
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import raft.*;
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
 import raft.common.id.RaftGroupId;
-import raft.common.id.RaftId;
 import raft.common.id.RaftPeerId;
 import raft.common.utils.NetUtils;
+import raft.server.RaftServerProxy;
+import raft.statemachine.BaseStateMachine;
+import raft.statemachine.StateMachine;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;

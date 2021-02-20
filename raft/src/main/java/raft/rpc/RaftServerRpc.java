@@ -1,14 +1,13 @@
-package raft;
+package raft.rpc;
 
-import raft.common.RaftPeer;
 import raft.common.id.RaftPeerId;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.AppendEntriesReply;
 import raft.requestBean.RequestVoteArgs;
 import raft.requestBean.RequestVoteReply;
+import raft.server.RaftServer;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.util.Objects;
 
 

@@ -1,6 +1,6 @@
-package raft;
+package raft.statemachine;
 
-import raft.common.RaftGroup;
+import raft.storage.RaftStorage;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
 
@@ -14,7 +14,7 @@ import java.io.Closeable;
  * @date 2021/02/11
  */
 public interface StateMachine extends Closeable {
-    void initialize(RaftPeerId peerId, RaftProperties properties,RaftStorage storage);
+    void initialize(RaftPeerId peerId, RaftProperties properties, RaftStorage storage);
 
     void pause();
 

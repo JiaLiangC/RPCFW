@@ -1,4 +1,4 @@
-package raft;
+package raft.storage;
 
 import java.io.Closeable;
 import java.io.IOException;

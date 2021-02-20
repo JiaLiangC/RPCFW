@@ -1,7 +1,8 @@
-package raft;
+package raft.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import raft.common.utils.RaftTimer;
 import raft.common.Daemon;
 
 import java.text.SimpleDateFormat;

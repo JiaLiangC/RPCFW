@@ -1,4 +1,4 @@
-package raft;
+package raft.common.utils;
 
 public class RaftTimer {
     private static final long NANOSECONDS_PER_MILLISECOND = 1000000;
@@ -9,7 +9,7 @@ public class RaftTimer {
         startTime = System.nanoTime();
     }
 
-    long getElapsedTime(){
+    public long getElapsedTime(){
         elapsedTime =  (System.nanoTime()-startTime)/NANOSECONDS_PER_MILLISECOND;
         return elapsedTime;
     }

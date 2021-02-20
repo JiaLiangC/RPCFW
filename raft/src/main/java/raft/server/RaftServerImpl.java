@@ -1,4 +1,4 @@
-package raft;
+package raft.server;
 
 
 import RPCFW.ServiceManager.registry.DefaultRegistry;
@@ -13,6 +13,7 @@ import raft.common.id.RaftPeerId;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.Entry;
 import raft.requestBean.RequestVoteArgs;
+import raft.rpc.RaftServerRpc;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -186,7 +187,7 @@ public class RaftServerImpl {
 
     /* public  <T> ExecutorCompletionService<T> sendHeartbeat(){
         RpcClient client = new NettyRpcClient("localhost",8080);
-        raft.RaftService raftService = new ClientProxy(client).getProxy(raft.RaftService.class);
+        raft.server.RaftService raftService = new ClientProxy(client).getProxy(raft.server.RaftService.class);
         raftService.RequestVote();
     }*/
 

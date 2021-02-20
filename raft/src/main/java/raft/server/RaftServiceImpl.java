@@ -1,4 +1,4 @@
-package raft;
+package raft.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +11,8 @@ import raft.requestBean.RequestVoteReply;
 
 
 //TODO  注册中心改本地或者ZK
+//TODO raft 网络隔离的 stale read https://zhuanlan.zhihu.com/p/27869566
+//TODO jraft 解决 stale read 思路 https://ask.csdn.net/questions/2956111
 /**
  * Raft 对外提供RPC 服务的接口实现类
  *

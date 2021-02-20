@@ -1,20 +1,13 @@
 import org.junit.Assert;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import raft.RaftServer;
-import raft.RaftServerImpl;
-import raft.RaftServerProxy;
-import raft.RaftServiceImpl;
-import raft.common.RaftProperties;
+import raft.server.RaftServerImpl;
+import raft.server.RaftServerProxy;
 import raft.common.id.RaftPeerId;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.IntStream;
 
 public class RaftTestUtils {
     public static final Logger LOG = LoggerFactory.getLogger(RaftTestUtils.class);

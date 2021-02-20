@@ -1,9 +1,8 @@
-package raft;
+package raft.statemachine;
 
+import raft.storage.RaftStorage;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
-
-import java.io.IOException;
 
 /**
  * 基础状态机实现，测试用
