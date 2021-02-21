@@ -2,11 +2,9 @@ package raft.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import raft.common.*;
 import raft.rpc.NettyRpcService;
 import raft.rpc.RaftServerRpc;
-import raft.common.RaftGroup;
-import raft.common.RaftPeer;
-import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
 import raft.statemachine.StateMachine;
 
@@ -78,6 +76,11 @@ public class RaftServerProxy implements RaftServer {
     @Override
     public int getCurrentTerm() {
         return raftServerImpl.serverState.getCurrentTerm();
+    }
+
+    @Override
+    public RaftClientReply submitClientRequest(RaftClientRequest request) {
+        return getServerImpl().submitClientRequest(request);
     }
 
     public RaftServerImpl getServerImpl(){

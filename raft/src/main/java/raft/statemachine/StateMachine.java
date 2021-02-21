@@ -1,5 +1,8 @@
 package raft.statemachine;
 
+import raft.client.RaftClient;
+import raft.common.RaftClientRequest;
+import raft.common.TransactionContext;
 import raft.storage.RaftStorage;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
@@ -21,6 +24,8 @@ public interface StateMachine extends Closeable {
     void reInitialize(RaftPeerId peerId, RaftProperties properties,RaftStorage storage);
 
     long takeSnapshot();
+
+     TransactionContext  startTransaction(RaftClientRequest request);
 
 
 }

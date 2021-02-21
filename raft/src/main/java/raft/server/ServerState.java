@@ -3,9 +3,13 @@ package raft.server;
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
+import raft.common.TransactionContext;
+import raft.common.id.ClientId;
 import raft.common.id.RaftPeerId;
 import raft.server.RaftServerImpl;
 import raft.statemachine.StateMachine;
+import raft.storage.MemLog;
+import raft.storage.RaftLog;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -32,6 +36,8 @@ public class ServerState {
     private RaftServerImpl server;
     private RaftGroup group;
 
+    private final RaftLog raftLog;
+
 
     public  ServerState(RaftPeerId peerId, RaftGroup group, RaftProperties properties, RaftServerImpl server, StateMachine stateMachine){
         this.selfId=peerId;
@@ -40,6 +46,7 @@ public class ServerState {
         this.currentTerm=0;
         this.votedFor=null;
         this.group = group;
+        this.raftLog=new MemLog(peerId);
     }
 
     public int getPeersCount(){
@@ -110,6 +117,10 @@ public class ServerState {
 
     public Collection<RaftPeer> getOtherPeers(){
         return group.getRaftPeers().stream().filter((peer)->!peer.getId().toString().equals(getSelfId().toString())).collect(Collectors.toList());
+    }
+
+    public long applyLog(TransactionContext context, ClientId clientId,long callId){
+        return raftLog.append(currentTerm,context,clientId,callId);
     }
 
 }

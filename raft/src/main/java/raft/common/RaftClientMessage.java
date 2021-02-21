@@ -1,25 +1,46 @@
 package raft.common;
 
-public class RaftClientMessage implements RaftRpcMessage {
+import RPCFW.RPCDemo.Nio.client.Client;
+import raft.client.RaftClient;
+import raft.common.id.ClientId;
+import raft.common.id.RaftGroupId;
+import raft.common.id.RaftPeerId;
+
+public abstract class RaftClientMessage implements RaftRpcMessage {
+
+    private ClientId clientId;
+    private RaftPeerId serverId;
+    private RaftGroupId groupId;
 
 
-    @Override
-    public boolean isRequest() {
-        return false;
+    RaftClientMessage(ClientId cid,RaftPeerId pid,RaftGroupId groupId){
+        this.clientId=cid;
+        this.serverId=pid;
+        this.groupId=groupId;
     }
+
+
+    public ClientId getClientId() {
+        return clientId;
+    }
+
+    public RaftPeerId getServerId() {
+        return serverId;
+    }
+
 
     @Override
     public String getRequestorId() {
-        return null;
+        return clientId.toString();
     }
 
     @Override
     public String getReplierId() {
-        return null;
+        return serverId.toString();
     }
 
     @Override
     public String getRaftGroupId() {
-        return null;
+        return groupId.toString();
     }
 }

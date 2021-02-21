@@ -1,5 +1,8 @@
 package raft.statemachine;
 
+import raft.common.RaftClientRequest;
+import raft.common.TransactionContext;
+import raft.requestBean.SMLogEntry;
 import raft.storage.RaftStorage;
 import raft.common.RaftProperties;
 import raft.common.id.RaftPeerId;
@@ -29,6 +32,11 @@ public class BaseStateMachine implements StateMachine {
     @Override
     public long takeSnapshot() {
         return 0;
+    }
+
+    @Override
+    public TransactionContext startTransaction(RaftClientRequest request) {
+        return new TransactionContextImpl(this,request, SMLogEntry.newBuilder().setData(request.getMsg().getContent()).build());
     }
 
     @Override

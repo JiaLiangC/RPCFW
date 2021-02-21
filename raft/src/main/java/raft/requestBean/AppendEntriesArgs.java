@@ -6,7 +6,7 @@ public class AppendEntriesArgs {
     private int Term;
     private String LeaderId;
     private String replyId;
-//    private List<Entry> Entries;
+    private List<Entry> Entries;
 
     AppendEntriesArgs(){}
 
@@ -14,7 +14,7 @@ public class AppendEntriesArgs {
         this.Term=Term;
         this.LeaderId=LeaderId;
         this.replyId=replyId;
-        //this.Entries = entries;
+        this.Entries = entries;
     }
 
     private  AppendEntriesArgs(Builder b){
@@ -72,11 +72,11 @@ public class AppendEntriesArgs {
     }
 
 
-//    public List<Entry> getEntries() {
-//        return Entries;
-//    }
+   public List<Entry> getEntries() {
+        return Entries;
+    }
 
-//    public void setEntries(List<Entry> entries) {
-//        Entries = entries;
-//    }
+    public void setEntries(List<Entry> entries) {
+        Entries = entries;
+    }
 }

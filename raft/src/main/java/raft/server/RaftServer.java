@@ -1,5 +1,7 @@
 package raft.server;
 
+import raft.common.RaftClientReply;
+import raft.common.RaftClientRequest;
 import raft.common.RaftPeer;
 import raft.common.id.RaftPeerId;
 
@@ -21,6 +23,8 @@ public interface RaftServer {
     RaftPeerId getId();
 
     int getCurrentTerm();
+
+    RaftClientReply submitClientRequest(RaftClientRequest request);
 
 
 }

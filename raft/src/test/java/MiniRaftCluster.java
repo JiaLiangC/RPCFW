@@ -1,5 +1,6 @@
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import raft.client.RaftClient;
 import raft.common.RaftGroup;
 import raft.common.RaftPeer;
 import raft.common.RaftProperties;
@@ -12,6 +13,7 @@ import raft.statemachine.StateMachine;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 
 public  class MiniRaftCluster {
     public static final Logger LOG = LoggerFactory.getLogger(MiniRaftCluster.class);
+
+
 
     protected RaftGroup group;
     protected RaftProperties raftProperties;
@@ -37,7 +41,22 @@ public  class MiniRaftCluster {
 
     public Map<RaftPeerId, RaftServerProxy> getServers(){
         return servers;
+    }
 
+     public List<RaftPeer> getPeers(){
+        return toRaftPeers(getServers().values());
+    }
+
+    static  List<RaftPeer> toRaftPeers(Collection<RaftServerProxy> servers){
+        return servers.stream().map(MiniRaftCluster::toRaftPeer).collect(Collectors.toList());
+    }
+
+    static  RaftPeer toRaftPeer(RaftServerProxy proxy){
+        return new RaftPeer(proxy.getId(),proxy.getServerRpc().getInetSocketAddress());
+    }
+
+    public RaftGroup getGroup() {
+        return group;
     }
 
     public boolean isConnected(RaftPeerId id){
@@ -105,7 +124,7 @@ public  class MiniRaftCluster {
         return proxy;
     }
 
-    void start() throws InterruptedException {
+    void start()   {
         ExecutorService service = Executors.newFixedThreadPool(20);
         initServers();
         servers.values().forEach(server->{
@@ -113,7 +132,14 @@ public  class MiniRaftCluster {
                 server.start();
             });
         });
-        service.awaitTermination(1, TimeUnit.HOURS);
+        //service.awaitTermination(1, TimeUnit.HOURS);
+    }
+
+    RaftClient  createRaftClient(RaftPeerId leadId,RaftGroup group){
+        return RaftClient.newBuilder()
+                .setGroup(group)
+                .setGroup(group).build()
+                ;
     }
 
 

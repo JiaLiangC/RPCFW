@@ -4,16 +4,14 @@ package raft.server;
 import RPCFW.ServiceManager.registry.DefaultRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import raft.common.Preconditions;
-import raft.common.RaftGroup;
-import raft.common.RaftPeer;
-import raft.common.RaftProperties;
+import raft.common.*;
 import raft.common.id.RaftGroupId;
 import raft.common.id.RaftPeerId;
 import raft.requestBean.AppendEntriesArgs;
 import raft.requestBean.Entry;
 import raft.requestBean.RequestVoteArgs;
 import raft.rpc.RaftServerRpc;
+import raft.statemachine.StateMachine;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -221,6 +219,35 @@ public class RaftServerImpl {
     public boolean isCandidate(){
         return role==RaftRole.Candidate;
     }
+
+    public RaftClientReply submitClientRequest(RaftClientRequest request) {
+
+        return null;
+    }
+
+
+    StateMachine getStateMachine(){
+        return proxy.getStateMachine();
+    }
+
+    public CompletableFuture<RaftClientReply> submitClientRequestAsync(RaftClientRequest request){
+        //1.check leader
+        //2.try cache
+        //3.statemachine check
+        //4.append log
+        //appendTransaction();
+        TransactionContext context = getStateMachine().
+        return null;
+    }
+
+
+    private CompletableFuture<RaftClientReply> appendTransaction(TransactionContext context,RaftClientRequest request){
+        long index = serverState.applyLog(context,request.getClientId(),request.getCallId());
+
+        return null;
+    }
+
+
 }
 /**
  * 流程梳理
