@@ -12,7 +12,7 @@ public class RaftClientReply extends RaftClientMessage {
     private final Message message;
 
 
-    RaftClientReply(ClientId cid, RaftPeerId pid, RaftGroupId groupId,long callId, boolean success,Message message){
+    public RaftClientReply(ClientId cid, RaftPeerId pid, RaftGroupId groupId, long callId, boolean success, Message message){
         super(cid, pid, groupId);
         this.success=success;
         this.callId=callId;

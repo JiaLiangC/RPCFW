@@ -29,7 +29,7 @@ public class RaftServerImpl {
 
     //TODO Followerinfo 封装follower信息
     //TODO LOG appender for send rpc to follower
-    public static final Logger LOG =LoggerFactory.getLogger(RaftServerImpl.class);
+    public static final Logger LOG = LoggerFactory.getLogger(RaftServerImpl.class);
 
     public static int MaxTimeOutMs = 1200;
     public static int MinTimeOutMs = 600;
@@ -37,144 +37,145 @@ public class RaftServerImpl {
     RaftConfiguration configuration;
 
     ServerState serverState;
-    ExecutorService executorService ;
+    ExecutorService executorService;
     private final RaftGroupId groupId;
-    private  final RaftServerProxy proxy;
+    private final RaftServerProxy proxy;
     private RaftRole role;
 
     private volatile LeaderElection electionDaemon;
-    private  volatile FollowerState heartBeatMonitor;
-    private  volatile LeaderState leaderState;
+    private volatile FollowerState heartBeatMonitor;
+    private volatile LeaderState leaderState;
 
-    private final Map<RaftPeerId,RaftPeer> peerMap = new ConcurrentHashMap<>();
+
+    private final Map<RaftPeerId, RaftPeer> peerMap = new ConcurrentHashMap<>();
 
 
     public ServerState getServerState() {
         return serverState;
     }
 
-    RaftServerImpl(RaftPeerId peerId, RaftGroup group, RaftServerProxy proxy, RaftProperties properties){
-        this.groupId=group.getRaftGroupId();
-        this.proxy=proxy;
-        this.serverState=new ServerState(peerId,group,properties,this,proxy.getStateMachine());
+    RaftServerImpl(RaftPeerId peerId, RaftGroup group, RaftServerProxy proxy, RaftProperties properties) {
+        this.groupId = group.getRaftGroupId();
+        this.proxy = proxy;
+        this.serverState = new ServerState(peerId, group, properties, this, proxy.getStateMachine());
         setPeerMap(group);
     }
 
-    void setPeerMap(RaftGroup raftGroup){
-        raftGroup.getRaftPeers().forEach(peer->{
-            peerMap.computeIfAbsent(peer.getId(),k->peer);
+    void setPeerMap(RaftGroup raftGroup) {
+        raftGroup.getRaftPeers().forEach(peer -> {
+            peerMap.computeIfAbsent(peer.getId(), k -> peer);
         });
     }
 
-    public RaftPeer getPeer(RaftPeerId id){
+    public RaftPeer getPeer(RaftPeerId id) {
         return peerMap.get(id);
     }
 
-    public RaftServerRpc getServrRpc(){
+    public RaftServerRpc getServrRpc() {
         return proxy.getServerRpc();
     }
 
-    private void startAsFollower(){
-        setRole(RaftRole.Follower,"startAsFollower");
+    private void startAsFollower() {
+        setRole(RaftRole.Follower, "startAsFollower");
         startHeartBeatMonitor();
     }
 
-    public void setRole(RaftRole newRole,String op) {
-        if(newRole!=role){
+    public void setRole(RaftRole newRole, String op) {
+        if (newRole != role) {
             //LOG.info("change role from {} to {} at Term {} for {}",role,newRole,serverState.getCurrentTerm(),op);
             this.role = newRole;
         }
     }
 
 
-    public void startLeaderElection(){
+    public void startLeaderElection() {
         electionDaemon = new LeaderElection(this);
         electionDaemon.start();
     }
 
 
-    public void startHeartBeatMonitor(){
+    public void startHeartBeatMonitor() {
         heartBeatMonitor = new FollowerState(this);
         heartBeatMonitor.start();
     }
 
-    public void  shutdownElectiondaemon(){
+    public void shutdownElectiondaemon() {
         LeaderElection leaderElection = electionDaemon;
-        if(leaderElection!=null){
+        if (leaderElection != null) {
             leaderElection.stopRunning();
         }
-        electionDaemon=null;
+        electionDaemon = null;
     }
 
 
-    public void shutDonwHeartBeatMonitor(){
-        if(heartBeatMonitor!=null){
+    public void shutDonwHeartBeatMonitor() {
+        if (heartBeatMonitor != null) {
             heartBeatMonitor.stopRunning();
         }
-        heartBeatMonitor=null;
+        heartBeatMonitor = null;
     }
 
-    public void shutDownLeaderState(){
-        if(leaderState!=null){
+    public void shutDownLeaderState() {
+        if (leaderState != null) {
             leaderState.stopRunning();
         }
-        leaderState=null;
+        leaderState = null;
     }
 
-    void changeToCandidate(){
-        Preconditions.assertTrue(isFollower(),"serverState is "+role+"  not follower,can't changeToCandidate");
-        LOG.info("server:{} change role from {} to changeToCandidate at Term {}",serverState.getSelfId(),role,serverState.getCurrentTerm());
+    void changeToCandidate() {
+        Preconditions.assertTrue(isFollower(), "serverState is " + role + "  not follower,can't changeToCandidate");
+        LOG.info("server:{} change role from {} to changeToCandidate at Term {}", serverState.getSelfId(), role, serverState.getCurrentTerm());
         shutDonwHeartBeatMonitor();
-        setRole(RaftRole.Candidate,"changeToCandidate");
+        setRole(RaftRole.Candidate, "changeToCandidate");
         startLeaderElection();
     }
 
-    void changeToLeader(){
-        LOG.info("server:{} leader election success at term:{}",serverState.getSelfId(),serverState.getCurrentTerm());
-        Preconditions.assertTrue(isCandidate(),"not candidate");
+    void changeToLeader() {
+        LOG.info("server:{} leader election success at term:{}", serverState.getSelfId(), serverState.getCurrentTerm());
+        Preconditions.assertTrue(isCandidate(), "not candidate");
         shutdownElectiondaemon();
-        setRole(RaftRole.Leader,"changeToLeader");
+        setRole(RaftRole.Leader, "changeToLeader");
         serverState.becomLeader();
         // start sending AppendEntries RPC to followers
         leaderState = new LeaderState(this);
         leaderState.start();
     }
 
-    void changeToFollower(int newTerm){
+    void changeToFollower(int newTerm) {
         final RaftRole old = role;
-        if(newTerm> serverState.getCurrentTerm()){
+        if (newTerm > serverState.getCurrentTerm()) {
             serverState.setCurrentTerm(newTerm);
             serverState.setVotedFor(null);
         }
 
-        if(old!=RaftRole.Follower){
-            setRole(RaftRole.Follower,"changeToFollower");
-            if(old==RaftRole.Leader){
+        if (old != RaftRole.Follower) {
+            setRole(RaftRole.Follower, "changeToFollower");
+            if (old == RaftRole.Leader) {
                 shutDownLeaderState();
-            }else if(old == RaftRole.Candidate){
+            } else if (old == RaftRole.Candidate) {
                 shutdownElectiondaemon();
             }
             startHeartBeatMonitor();
         }
     }
 
-    public void resetElectionTimeOut(){
-        LOG.info("server:{} at term {} reset electionTime out",serverState.getSelfId(),serverState.getCurrentTerm());
+    public void resetElectionTimeOut() {
+        LOG.info("server:{} at term {} reset electionTime out", serverState.getSelfId(), serverState.getCurrentTerm());
         heartBeatMonitor.updateLastHeartBeatRpcTime();
     }
 
-    public static int getRandomTimeOutMs(){
-        return MinTimeOutMs+ThreadLocalRandom.current().nextInt(MaxTimeOutMs-MinTimeOutMs+1);
+    public static int getRandomTimeOutMs() {
+        return MinTimeOutMs + ThreadLocalRandom.current().nextInt(MaxTimeOutMs - MinTimeOutMs + 1);
     }
 
 
-    public RequestVoteArgs createRequestVoteRequest(int Term,String candidateId,String replyId){
+    public RequestVoteArgs createRequestVoteRequest(int Term, String candidateId, String replyId) {
         return RequestVoteArgs.newBuilder().setTerm(Term).setCandidateId(candidateId).setReplyId(replyId).build();
     }
 
     //TODO 参数修正，传入
-    public AppendEntriesArgs createHeartBeatAppendEntryArgs(RaftPeerId peerId){
-        AppendEntriesArgs args =  AppendEntriesArgs.newBuilder()
+    public AppendEntriesArgs createHeartBeatAppendEntryArgs(RaftPeerId peerId) {
+        AppendEntriesArgs args = AppendEntriesArgs.newBuilder()
                 .setLeaderId(serverState.getSelfId().toString())
                 .setTerm(serverState.getCurrentTerm())
                 .setReplyId(peerId.toString())
@@ -189,7 +190,7 @@ public class RaftServerImpl {
         raftService.RequestVote();
     }*/
 
-    public void start(){
+    public void start() {
         DefaultRegistry registry = new DefaultRegistry();
         InetSocketAddress serverAddr = proxy.getServerRpc().getInetSocketAddress();
         registry.newRegister(serverAddr, new RaftServiceImpl(this));
@@ -197,8 +198,7 @@ public class RaftServerImpl {
     }
 
 
-
-    public void shutdown(){
+    public void shutdown() {
         //follower 和 leader心跳，超时则转为candidate
         heartBeatMonitor.stopRunning();
         //candidate 发起选举
@@ -208,16 +208,16 @@ public class RaftServerImpl {
     }
 
 
-    public  boolean isFollower(){
-        return role==RaftRole.Follower;
+    public boolean isFollower() {
+        return role == RaftRole.Follower;
     }
 
-    public  boolean isLeader(){
-        return role==RaftRole.Leader;
+    public boolean isLeader() {
+        return role == RaftRole.Leader;
     }
 
-    public boolean isCandidate(){
-        return role==RaftRole.Candidate;
+    public boolean isCandidate() {
+        return role == RaftRole.Candidate;
     }
 
     public RaftClientReply submitClientRequest(RaftClientRequest request) {
@@ -226,28 +226,44 @@ public class RaftServerImpl {
     }
 
 
-    StateMachine getStateMachine(){
+    StateMachine getStateMachine() {
         return proxy.getStateMachine();
     }
 
-    public CompletableFuture<RaftClientReply> submitClientRequestAsync(RaftClientRequest request){
+    public CompletableFuture<RaftClientReply> submitClientRequestAsync(RaftClientRequest request) {
         //1.check leader
         //2.try cache
         //3.statemachine check
         //4.append log
         //appendTransaction();
-        TransactionContext context = getStateMachine().
-        return null;
+        TransactionContext context = getStateMachine().startTransaction(request);
+        return appendTransaction(context, request);
     }
 
 
-    private CompletableFuture<RaftClientReply> appendTransaction(TransactionContext context,RaftClientRequest request){
-        long index = serverState.applyLog(context,request.getClientId(),request.getCallId());
+    private CompletableFuture<RaftClientReply> appendTransaction(TransactionContext context, RaftClientRequest request) {
+        long entryIndex = serverState.applyLog(context, request.getClientId(), request.getCallId());
 
-        return null;
+        PendingRequest p = null;
+        //add request to pending list(pending for sync in hole group peers)
+        //notify sends to send append entries
+        p = leaderState.addPendingQequest(entryIndex, request, context);
+        leaderState.notifyAppenders();
+        return p.getFuture();
     }
 
 
+    public long getMinTimeOutMs() {
+        return 200;
+    }
+
+    public RaftPeerId getId(){
+        return serverState.getSelfId();
+    }
+
+    public RaftGroupId getGroupId() {
+        return groupId;
+    }
 }
 /**
  * 流程梳理

@@ -36,6 +36,7 @@ public class ServerState {
     private RaftServerImpl server;
     private RaftGroup group;
 
+
     private final RaftLog raftLog;
 
 
@@ -54,6 +55,10 @@ public class ServerState {
         int size = group.getRaftPeers().size();
         lock.unlock();
         return size;
+    }
+
+    public RaftLog getRaftLog() {
+        return raftLog;
     }
 
 

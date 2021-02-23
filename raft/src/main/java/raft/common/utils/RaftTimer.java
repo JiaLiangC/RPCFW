@@ -2,16 +2,28 @@ package raft.common.utils;
 
 public class RaftTimer {
     private static final long NANOSECONDS_PER_MILLISECOND = 1000000;
-    private long elapsedTime;
+    private static final Long STARTED_AT = System.nanoTime();
     private long startTime;
     public RaftTimer(){
-        elapsedTime=0;
         startTime = System.nanoTime();
     }
 
+    public RaftTimer(long nanos){
+        startTime = nanos;
+    }
+
     public long getElapsedTime(){
-        elapsedTime =  (System.nanoTime()-startTime)/NANOSECONDS_PER_MILLISECOND;
+        long elapsedTime =  (System.nanoTime()-startTime)/NANOSECONDS_PER_MILLISECOND;
         return elapsedTime;
+    }
+
+     public static RaftTimer latest(RaftTimer a, RaftTimer b){
+        if(a.startTime<b.startTime){return a;}
+        return b;
+    }
+
+    public RaftTimer addTimeMs(long millSeconds){
+        return new RaftTimer(startTime+millSeconds*NANOSECONDS_PER_MILLISECOND);
     }
 
 }
